@@ -28,6 +28,7 @@ public class EnemyBehaviour : MonoBehaviour {
         CurrentEnemyState = EnemyState.Seeking;
         ThePlayer = GameObject.FindGameObjectWithTag("Player");
         PlayerScript = ThePlayer.GetComponent<PlayerBehaviour>();
+        PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
         IsActive = true;
         AttackTimer = 9000.1f;
     }
@@ -99,7 +100,7 @@ public class EnemyBehaviour : MonoBehaviour {
                 PlayerScript.CurrentPlayerState = PlayerBehaviour.PlayerState.Recovering;
                 AttackTimer = 9000.1f;
             }
-            else
+            else if (CurrentEnemyState == EnemyState.Attacking)
             {
                 Destroy(Col.gameObject);
                 IsActive = false;

@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor.SceneManagement;
 using System.Collections;
 
 public class GameManager : MonoBehaviour {
@@ -13,8 +12,7 @@ public class GameManager : MonoBehaviour {
 	void Update () {
         if (Input.GetKeyUp(KeyCode.Escape))
         {
-            //Application.LoadLevel(0);
-            EditorSceneManager.LoadScene(0);
+            Application.LoadLevel(0);
         }
     }
 }

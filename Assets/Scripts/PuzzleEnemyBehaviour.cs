@@ -11,6 +11,8 @@ public class PuzzleEnemyBehaviour : MonoBehaviour {
         Stunned
     }
 
+    public bool IsPlanningPhase = true;
+    public Vector3 SpawnPosition;
     public Material[] EnemyColors;
     public EnemyState CurrentEnemyState;
     public GameObject ThePlayer;
@@ -32,6 +34,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour {
         PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
         IsActive = true;
         AttackTimer = 9000.1f;
+        SpawnPosition = transform.position;
     }
 
     // Update is called once per frame
@@ -39,7 +42,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour {
     {
         if (IsActive)
         {
-            if (PlayerScript.HasDrawn)
+            if (PlayerScript.HasDrawn && (PlayerScript.CurrentPlayerState != PuzzlePlayerBehaviour.PlayerState.Idle || PlayerScript.Moving || !PlayerScript.IsDrawPhase))
             {
                 DoThings();
             }
@@ -57,26 +60,74 @@ public class PuzzleEnemyBehaviour : MonoBehaviour {
                 PlayerScript.LeftArrowFlag = false;
                 PlayerScript.RightArrowFlag = false;
                 PlayerScript.GetComponent<Rigidbody>().velocity *= 0.0f;
+                PlayerScript.IsAttacking = false;
                 //PlayerScript.UpVelocity /= 5.0f;
                 //PlayerScript.RightVelocity /= 5.0f;
-                PlayerScript.AttackingDuration = 0.0f;
                 PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
                 if (!PlayerScript.HasDrawn)
                 {
                     PlayerScript.HasDrawn = true;
-                    PlayerScript.IsAttacking = false;
+                    
                     PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Idle;
                     PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
-                    PlayerScript.CurrentAction += 1;
-                    PlayerScript.CurrentTimer = 0.0f;
+                    if (IsPlanningPhase)
+                    {
+                        PlayerScript.InputEnabled = true;
+                        if (PlayerScript.IsParryStance)
+                        {
+                            //RecoveryTimer = 0.3f;
+                            PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.2f);
+                        }
+                        else
+                        {
+                            //RecoveryTimer = 0.5f;
+                            PlayerScript.ActionTimers.Add(0.5f - PlayerScript.AttackingDuration + 0.2f);
+                        }
+                    }
+                    else
+                    {
+                        PlayerScript.CurrentAction += 1;
+                        PlayerScript.CurrentTimer = 0.0f;
+                    }
+                    
                 }
                 else
                 {
-                    PlayerScript.RecoveryTimer = 0.5f;
+                    if (PlayerScript.IsParryStance)
+                    {
+                        PlayerScript.RecoveryTimer = 0.3f;
+                    }
+                    else
+                    {
+                        PlayerScript.RecoveryTimer = 0.5f;
+                    }
                     PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                     PlayerScript.EnemyCollided = true;
+                    if (IsPlanningPhase)
+                    {
+                        if (PlayerScript.IsParryStance)
+                        {
+                            RecoveryTimer = 0.3f;
+                            PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.3f);
+                        }
+                        else
+                        {
+                            RecoveryTimer = 0.5f;
+                            PlayerScript.ActionTimers.Add(0.5f - PlayerScript.AttackingDuration + 0.5f);
+                        }
+                    }
                 }
-                Destroy(gameObject);
+                PlayerScript.AttackingDuration = 0.0f;
+                if (IsPlanningPhase)
+                {
+                    IsActive = false;
+                    GetComponent<MeshRenderer>().enabled = false;
+                    GetComponent<BoxCollider>().enabled = false;
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
             }
             else if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Parrying)
             {
@@ -155,5 +206,21 @@ public class PuzzleEnemyBehaviour : MonoBehaviour {
                     break;
                 }
         }
+    }
+
+    public void Reset()
+    {
+        CurrentEnemyState = EnemyState.Seeking;
+        ThePlayer = GameObject.FindGameObjectWithTag("Player");
+        PlayerScript = ThePlayer.GetComponent<PuzzlePlayerBehaviour>();
+        PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
+        GetComponent<MeshRenderer>().material = EnemyColors[0];
+        IsActive = true;
+        AttackTimer = 9000.1f;
+        transform.position = SpawnPosition;
+        IsPlanningPhase = false;
+        GetComponent<MeshRenderer>().enabled = true;
+        GetComponent<BoxCollider>().enabled = true;
+        PlayerScript.HasDrawn = false;
     }
 }

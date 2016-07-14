@@ -27,4 +27,9 @@ public class TimeManager : MonoBehaviour {
         CurrentTime += NewTime;
         GetComponent<Text>().text = "Time: " + CurrentTime + "s";
     }
+
+    public float GetTime()
+    {
+        return CurrentTime;
+    }
 }

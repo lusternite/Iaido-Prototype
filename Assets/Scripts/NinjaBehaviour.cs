@@ -1,14 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PuzzleEnemyBehaviour : MonoBehaviour
-{
+public class NinjaBehaviour : MonoBehaviour {
 
-    public enum EnemyState
+    public enum NinjaState
     {
         Seeking,
         Attacking,
-        Parrying,
+        Evading,
         Recovering,
         Stunned
     }
@@ -16,16 +15,18 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
     public bool IsPursuer = false;
     public bool IsPlanningPhase = true;
     public Vector3 SpawnPosition;
-    public Material[] EnemyColors;
-    public EnemyState CurrentEnemyState;
+    public Material[] NinjaColors;
+    public NinjaState CurrentNinjaState;
     public GameObject ThePlayer;
     public PuzzlePlayerBehaviour PlayerScript;
-    public float EnemyVelocity = 1.0f;
-    public float EnemyAttackRadius = 2.5f;
+    public float NinjaVelocity = 3.0f;
+    public float NinjaAttackRadius = 1.5f;
     Vector3 AttackPosition;
+    Vector3 EvadeDirection;
     float AttackTimer;
-    float ParryDuration = 0.3f;
-    float ParryTimer;
+    float EvadeDuration = 0.3f;
+    float EvadeTimer;
+    float EvadeCooldown;
     public float RecoveryTimer;
     public bool IsActive;
     public float StunDuration;
@@ -34,13 +35,14 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        CurrentEnemyState = EnemyState.Seeking;
+        CurrentNinjaState = NinjaState.Seeking;
         ThePlayer = GameObject.FindGameObjectWithTag("Player");
         PlayerScript = ThePlayer.GetComponent<PuzzlePlayerBehaviour>();
         PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
         IsActive = true;
         AttackTimer = 9000.1f;
-        ParryTimer = 0.0f;
+        EvadeTimer = 0.0f;
+        EvadeCooldown = 0.0f;
         SpawnPosition = transform.position;
     }
 
@@ -62,7 +64,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
         {
             if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Attacking)
             {
-                if (CurrentEnemyState == EnemyState.Parrying)
+                if (CurrentNinjaState == NinjaState.Evading)
                 {
                     PlayerScript.UpArrowFlag = false;
                     PlayerScript.DownArrowFlag = false;
@@ -75,8 +77,8 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                     PlayerScript.EnemyCollided = true;
                     PlayerScript.AttackingDuration = 0.0f;
-                    CurrentEnemyState = EnemyState.Recovering;
-                    GetComponent<MeshRenderer>().material = EnemyColors[2];
+                    CurrentNinjaState = NinjaState.Recovering;
+                    GetComponent<MeshRenderer>().material = NinjaColors[2];
                     RecoveryTimer = 0.3f;
                 }
                 else if (PlayerScript.AttackingTimer < AttackTimer)
@@ -148,7 +150,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     {
                         IsActive = false;
                         GetComponent<MeshRenderer>().enabled = false;
-                        GetComponent<BoxCollider>().enabled = false;
+                        GetComponent<SphereCollider>().enabled = false;
                     }
                     else
                     {
@@ -164,8 +166,8 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                 PlayerScript.RightArrowFlag = false;
 
                 StunDuration = 2.0f;
-                CurrentEnemyState = EnemyState.Stunned;
-                GetComponent<MeshRenderer>().material = EnemyColors[2];
+                CurrentNinjaState = NinjaState.Stunned;
+                GetComponent<MeshRenderer>().material = NinjaColors[2];
                 PlayerScript.RecoveryTimer = 0.2f;
                 PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                 PlayerScript.EnemyCollided = true;
@@ -177,7 +179,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     PlayerScript.ActionTimers.Add(0.3f - PlayerScript.ParryDuration + 0.2f);
                 }
             }
-            else if (CurrentEnemyState == EnemyState.Attacking)
+            else if (CurrentNinjaState == NinjaState.Attacking)
             {
                 //Destroy(Col.gameObject);
                 Col.gameObject.GetComponent<PuzzlePlayerBehaviour>().enabled = false;
@@ -190,6 +192,9 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
             Debug.Log("COLLISION");
             Debug.Log("Player timer = " + PlayerScript.AttackingTimer);
             Debug.Log("AI timer = " + AttackTimer);
+
+            Col.transform.rotation = Quaternion.identity;
+            Debug.Log(Col.transform.rotation);
         }
     }
 
@@ -199,7 +204,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
         {
             if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Attacking)
             {
-                if (CurrentEnemyState == EnemyState.Parrying)
+                if (CurrentNinjaState == NinjaState.Evading)
                 {
                     PlayerScript.UpArrowFlag = false;
                     PlayerScript.DownArrowFlag = false;
@@ -212,8 +217,8 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                     PlayerScript.EnemyCollided = true;
                     PlayerScript.AttackingDuration = 0.0f;
-                    CurrentEnemyState = EnemyState.Recovering;
-                    GetComponent<MeshRenderer>().material = EnemyColors[2];
+                    CurrentNinjaState = NinjaState.Recovering;
+                    GetComponent<MeshRenderer>().material = NinjaColors[2];
                     RecoveryTimer = 0.3f;
                 }
                 else if (PlayerScript.AttackingTimer < AttackTimer)
@@ -285,7 +290,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     {
                         IsActive = false;
                         GetComponent<MeshRenderer>().enabled = false;
-                        GetComponent<BoxCollider>().enabled = false;
+                        GetComponent<SphereCollider>().enabled = false;
                     }
                     else
                     {
@@ -301,8 +306,8 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                 PlayerScript.RightArrowFlag = false;
 
                 StunDuration = 2.0f;
-                CurrentEnemyState = EnemyState.Stunned;
-                GetComponent<MeshRenderer>().material = EnemyColors[2];
+                CurrentNinjaState = NinjaState.Stunned;
+                GetComponent<MeshRenderer>().material = NinjaColors[2];
                 PlayerScript.RecoveryTimer = 0.2f;
                 PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                 PlayerScript.EnemyCollided = true;
@@ -314,7 +319,7 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     PlayerScript.ActionTimers.Add(0.3f - PlayerScript.ParryDuration + 0.2f);
                 }
             }
-            else if (CurrentEnemyState == EnemyState.Attacking)
+            else if (CurrentNinjaState == NinjaState.Attacking)
             {
                 //Destroy(Col.gameObject);
                 Col.gameObject.GetComponent<PuzzlePlayerBehaviour>().enabled = false;
@@ -323,82 +328,104 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                 Col.rigidbody.velocity *= 0.0f;
                 IsActive = false;
             }
+
+            Debug.Log("COLLISION");
+            Debug.Log("Player timer = " + PlayerScript.AttackingTimer);
+            Debug.Log("AI timer = " + AttackTimer);
+
+            Col.transform.rotation = Quaternion.identity;
+            Debug.Log(Col.transform.rotation);
         }
     }
 
     void DoThings()
     {
-        switch (CurrentEnemyState)
+        switch (CurrentNinjaState)
         {
-            case EnemyState.Seeking:
+            case NinjaState.Seeking:
                 {
-                    //Debug.Log(ThePlayer.GetComponent<Transform>().position);
-                    if (IsPursuer)
+                    CalculateMovement();
+                    if (Vector3.Distance(transform.position, ThePlayer.GetComponent<Transform>().position) <= NinjaAttackRadius)
                     {
-                        transform.position = Vector3.MoveTowards(transform.position, PlayerScript.GetPredictedForwardPosition(5.0f), EnemyVelocity * Time.deltaTime);
-                    }
-                    else
-                    {
-                        transform.position = Vector3.MoveTowards(transform.position, ThePlayer.GetComponent<Transform>().position, EnemyVelocity * Time.deltaTime);
-                    }
-                    if (Vector3.Distance(transform.position, ThePlayer.GetComponent<Transform>().position) <= EnemyAttackRadius)
-                    {
-                        if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Attacking)
+                        if (DetermineIfCanAttack())
                         {
-                            CurrentEnemyState = EnemyState.Parrying;
-                            GetComponent<MeshRenderer>().material = EnemyColors[3];
-                            ParryTimer = 0.0f;
+                            CurrentNinjaState = NinjaState.Attacking;
+                            GetComponent<MeshRenderer>().material = NinjaColors[1];
+                            AttackPosition = ThePlayer.GetComponent<Transform>().position;
+                            AttackTimer = Time.time;
                         }
                         else
                         {
-                            CurrentEnemyState = EnemyState.Attacking;
-                            GetComponent<MeshRenderer>().material = EnemyColors[1];
-                            AttackPosition = ThePlayer.GetComponent<Transform>().position;
-                            AttackTimer = Time.time;
+                            if (EvadeCooldown == 0.0f)
+                            {
+                                CurrentNinjaState = NinjaState.Evading;
+                                GetComponent<MeshRenderer>().material = NinjaColors[3];
+                                EvadeTimer = 0.0f;
+                                EvadeDirection = Vector3.Normalize(transform.position - PlayerScript.transform.position);
+                            }
+                            else
+                            {
+                                CurrentNinjaState = NinjaState.Attacking;
+                                GetComponent<MeshRenderer>().material = NinjaColors[1];
+                                AttackPosition = ThePlayer.GetComponent<Transform>().position;
+                                AttackTimer = Time.time;
+                            }
                         }
                     }
                     break;
                 }
-            case EnemyState.Attacking:
+            case NinjaState.Attacking:
                 {
-                    transform.position = Vector3.MoveTowards(transform.position, AttackPosition, EnemyVelocity * Time.deltaTime * 5.0f);
+                    transform.position = Vector3.MoveTowards(transform.position, AttackPosition, NinjaVelocity * Time.deltaTime * 5.0f);
                     if (Vector3.Distance(transform.position, AttackPosition) == 0.0f)
                     {
-                        CurrentEnemyState = EnemyState.Recovering;
-                        GetComponent<MeshRenderer>().material = EnemyColors[2];
-                        RecoveryTimer = 2.0f;
+                        CurrentNinjaState = NinjaState.Recovering;
+                        GetComponent<MeshRenderer>().material = NinjaColors[2];
+                        RecoveryTimer = 1.5f;
                         AttackTimer = 9000.1f;
                     }
                     break;
                 }
-            case EnemyState.Parrying:
+            case NinjaState.Evading:
                 {
-                    ParryTimer += Time.deltaTime;
-                    if (ParryTimer >= ParryDuration)
+                    EvadeTimer += Time.deltaTime;
+                    transform.position += EvadeDirection * NinjaVelocity * 3.0f * Time.deltaTime;
+                    if (EvadeTimer >= EvadeDuration)
                     {
-                        CurrentEnemyState = EnemyState.Recovering;
-                        GetComponent<MeshRenderer>().material = EnemyColors[2];
-                        RecoveryTimer = 1.0f;
+                        //If distance between ninja and player is less than 8, attack the player
+                        if (Vector3.Magnitude(PlayerScript.transform.position - transform.position) <= 8.0f)
+                        {
+                            CurrentNinjaState = NinjaState.Attacking;
+                            GetComponent<MeshRenderer>().material = NinjaColors[1];
+                            AttackPosition = ThePlayer.GetComponent<Transform>().position;
+                            AttackTimer = Time.time;
+                        }
+                        else
+                        {
+                            CurrentNinjaState = NinjaState.Recovering;
+                            GetComponent<MeshRenderer>().material = NinjaColors[2];
+                            RecoveryTimer = 0.5f;
+                        }
                     }
                     break;
                 }
-            case EnemyState.Recovering:
+            case NinjaState.Recovering:
                 {
                     RecoveryTimer -= Time.deltaTime;
                     if (RecoveryTimer <= 0.0f)
                     {
-                        CurrentEnemyState = EnemyState.Seeking;
-                        GetComponent<MeshRenderer>().material = EnemyColors[0];
+                        CurrentNinjaState = NinjaState.Seeking;
+                        GetComponent<MeshRenderer>().material = NinjaColors[0];
                     }
                     break;
                 }
-            case EnemyState.Stunned:
+            case NinjaState.Stunned:
                 {
                     StunDuration -= Time.deltaTime;
                     if (StunDuration <= 0.0f)
                     {
-                        CurrentEnemyState = EnemyState.Seeking;
-                        GetComponent<MeshRenderer>().material = EnemyColors[0];
+                        CurrentNinjaState = NinjaState.Seeking;
+                        GetComponent<MeshRenderer>().material = NinjaColors[0];
                     }
                     break;
                 }
@@ -407,17 +434,138 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
 
     public void Reset()
     {
-        CurrentEnemyState = EnemyState.Seeking;
+        CurrentNinjaState = NinjaState.Seeking;
         ThePlayer = GameObject.FindGameObjectWithTag("Player");
         PlayerScript = ThePlayer.GetComponent<PuzzlePlayerBehaviour>();
         PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
-        GetComponent<MeshRenderer>().material = EnemyColors[0];
+        GetComponent<MeshRenderer>().material = NinjaColors[0];
         IsActive = true;
         AttackTimer = 9000.1f;
         transform.position = SpawnPosition;
         IsPlanningPhase = false;
         GetComponent<MeshRenderer>().enabled = true;
-        GetComponent<BoxCollider>().enabled = true;
+        GetComponent<SphereCollider>().enabled = true;
         PlayerScript.HasDrawn = false;
+    }
+
+    bool DetermineIfCanAttack()
+    {
+        switch(PlayerScript.GetOppositeDirection())
+        {
+            case PuzzlePlayerBehaviour.FacingDirection.Up:
+                {
+                    if (transform.position.z > ThePlayer.transform.position.z)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.UpRight:
+                {
+                    if ((transform.position.z > ThePlayer.transform.position.z) && (transform.position.x > ThePlayer.transform.position.x))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.UpLeft:
+                {
+                    if ((transform.position.z > ThePlayer.transform.position.z) && (transform.position.x < ThePlayer.transform.position.x))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.Down:
+                {
+                    if (transform.position.z < ThePlayer.transform.position.z)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.DownRight:
+                {
+                    if ((transform.position.z < ThePlayer.transform.position.z) && (transform.position.x > ThePlayer.transform.position.x))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.DownLeft:
+                {
+                    if ((transform.position.z < ThePlayer.transform.position.z) && (transform.position.x < ThePlayer.transform.position.x))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.Left:
+                {
+                    if (transform.position.x < ThePlayer.transform.position.x)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            case PuzzlePlayerBehaviour.FacingDirection.Right:
+                {
+                    if (transform.position.x > ThePlayer.transform.position.x)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+        }
+        return false;
+    }
+
+    void CalculateMovement()
+    {
+        Vector3 TargetDirection = Vector3.Normalize(PlayerScript.GetPredictedBackwardPosition(60.0f) - transform.position);
+        if (DetermineIfCanAttack())
+        {
+            transform.position += TargetDirection * NinjaVelocity * Time.deltaTime;
+        }
+        else
+        {
+            Vector3 CollisionDetection = TargetDirection * 0.5f + transform.position;
+            if (Vector3.Magnitude(ThePlayer.transform.position - CollisionDetection) <= 5.0f)
+            {
+                Vector3 AvoidanceForce = Vector3.Normalize(CollisionDetection - ThePlayer.transform.position) * 0.5f;
+                Debug.Log("Avoidance force = " + AvoidanceForce);
+                transform.position += (TargetDirection + AvoidanceForce) * NinjaVelocity * Time.deltaTime;
+            }
+            else
+            {
+                transform.position += TargetDirection * NinjaVelocity * Time.deltaTime;
+            }
+            Debug.Log("Cannot Attack");
+        }
+        
     }
 }

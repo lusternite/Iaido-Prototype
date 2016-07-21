@@ -15,7 +15,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     }
 
 
-    public float MoveSpeed = 1.0f;
+    public float MoveSpeed = 2.0f;
     public bool UpArrowFlag = false;
     public bool LeftArrowFlag = false;
     public bool DownArrowFlag = false;
@@ -87,8 +87,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        UpVelocity = new Vector3(0.0f, 0.0f, 1.0f);
-        RightVelocity = new Vector3(1.0f, 0.0f, 0.0f);
+        UpVelocity = new Vector3(0.0f, 0.0f, MoveSpeed);
+        RightVelocity = new Vector3(MoveSpeed, 0.0f, 0.0f);
         RecoveryTimer = 0.0f;
         ActionClock = FindObjectOfType<TimeManager>();
         ActionMoves = FindObjectOfType<MoveManager>();
@@ -107,7 +107,6 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             HandleParrying();
             ChangeStance();
             HandleRecovery();
-            HandleDraw();
         }
         else
         {
@@ -314,7 +313,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             }
             else
             {
-                AttackingDuration = 0.5f;
+                AttackingDuration = 0.4f;
             }
 
             //AttackingCooldown = 2.0f;
@@ -386,15 +385,16 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             {
                 CurrentPlayerState = PlayerState.Recovering;
                 AttackingDuration = 0.0f;
+                //Punish if missed
                 if (IsParryStance)
                 {
-                    RecoveryTimer = 0.3f;
-                    ActionTimers.Add(0.5f);
+                    RecoveryTimer = 0.5f;
+                    ActionTimers.Add(0.7f);
                 }
                 else
                 {
-                    RecoveryTimer = 0.5f;
-                    ActionTimers.Add(1.0f);
+                    RecoveryTimer = 1.0f;
+                    ActionTimers.Add(1.4f);
                 }
                 IsAttacking = false;
                 GetComponent<Rigidbody>().velocity *= 0.0f;
@@ -431,7 +431,6 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 MovementButtonsDown = 0;
             }
             ActionSequence.Add(Actions.Parry);
-            ActionTimers.Add(0.5f);
         }
         if (ParryDuration > 0.0f)
         {
@@ -446,6 +445,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 DownArrowFlag = false;
                 LeftArrowFlag = false;
                 RightArrowFlag = false;
+                ActionTimers.Add(0.5f);
             }
         }
     }
@@ -458,7 +458,15 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             //GetComponent<Rigidbody>().velocity *= 8.0f;
             //UpVelocity *= 10.0f;
             //RightVelocity *= 10.0f;
-            EvadeDuration = 0.2f;
+            if (IsParryStance)
+            {
+                EvadeDuration = 0.2f;
+            }
+            else
+            {
+                EvadeDuration = 0.1f;
+            }
+
             InputEnabled = false;
             switch (CurrentFacingDirection)
             {
@@ -515,7 +523,14 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 MovementButtonsDown = 0;
             }
             ActionSequence.Add(Actions.Evade);
-            ActionTimers.Add(0.3f);
+            if (IsParryStance)
+            {
+                ActionTimers.Add(0.3f);
+            }
+            else
+            {
+                ActionTimers.Add(0.2f);
+            }
         }
         if (EvadeDuration > 0.0f)
         {
@@ -543,13 +558,19 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         {
             IsParryStance = true;
             ActionSequence.Add(Actions.StanceChange);
-            ActionTimers.Add(0.0f);
+            ActionTimers.Add(0.1f);
+            RecoveryTimer = 0.1f;
+            CurrentPlayerState = PlayerState.Recovering;
+            GetComponent<MeshRenderer>().material = PlayerColors[3];
         }
         else if (Input.GetKeyUp(KeyCode.Alpha2))
         {
             IsParryStance = false;
             ActionSequence.Add(Actions.StanceChange);
-            ActionTimers.Add(0.0f);
+            ActionTimers.Add(0.1f);
+            RecoveryTimer = 0.1f;
+            CurrentPlayerState = PlayerState.Recovering;
+            GetComponent<MeshRenderer>().material = PlayerColors[3];
         }
     }
 
@@ -562,26 +583,34 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         }
     }
 
-    void HandleDraw()
+    public void HandleDraw()
     {
-        if (Input.GetKeyUp(KeyCode.Return))
+        IsDrawPhase = false;
+        transform.position = new Vector3(0.0f, 0.52f, 0.0f);
+        PuzzleEnemyBehaviour[] Enemies = FindObjectsOfType<PuzzleEnemyBehaviour>();
+        foreach (PuzzleEnemyBehaviour i in Enemies)
         {
-            IsDrawPhase = false;
-            transform.position = new Vector3(0.0f, 0.52f, 0.0f);
-            PuzzleEnemyBehaviour[] Enemies = FindObjectsOfType<PuzzleEnemyBehaviour>();
-            foreach (PuzzleEnemyBehaviour i in Enemies)
-            {
-                i.gameObject.GetComponent<BoxCollider>().enabled = true;
-                i.Reset();
-            }
-            CurrentPlayerState = PlayerState.Idle;
-            IsParryStance = true;
-            CurrentFacingDirection = FacingDirection.Right;
-            InputEnabled = false;
-            EnemyCollided = false;
-            GetComponent<Rigidbody>().velocity *= 0.0f;
-            GameObject.FindGameObjectWithTag("Scoreboard").GetComponent<Canvas>().enabled = true;
+            i.gameObject.GetComponent<BoxCollider>().enabled = true;
+            i.Reset();
         }
+        NinjaBehaviour[] Ninjas = FindObjectsOfType<NinjaBehaviour>();
+        foreach (NinjaBehaviour j in Ninjas)
+        {
+            j.gameObject.GetComponent<SphereCollider>().enabled = true;
+            j.Reset();
+        }
+        Arrow[] Arrows = FindObjectsOfType<Arrow>();
+        for (int k = Arrows.Length - 1; k >= 0; k--)
+        {
+            Destroy(Arrows[k].gameObject);
+        }
+        CurrentPlayerState = PlayerState.Idle;
+        IsParryStance = true;
+        CurrentFacingDirection = FacingDirection.Right;
+        InputEnabled = false;
+        EnemyCollided = false;
+        GetComponent<Rigidbody>().velocity *= 0.0f;
+        GameObject.FindGameObjectWithTag("Scoreboard").GetComponent<Canvas>().enabled = true;
     }
 
     void HandleActionSequence()
@@ -678,12 +707,12 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 //ActionSequence.Add(Actions.Attack);
                                 if (IsParryStance)
                                 {
-                                    RecoveryTimer = 0.3f;
+                                    RecoveryTimer = 0.5f;
                                     //ActionTimers.Add(0.5f);
                                 }
                                 else
                                 {
-                                    RecoveryTimer = 0.5f;
+                                    RecoveryTimer = 1.0f;
                                     //ActionTimers.Add(1.0f);
                                 }
                                 GetComponent<Rigidbody>().velocity *= 0.0f;
@@ -837,15 +866,10 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 case Actions.StanceChange:
                     {
                         ActionMoves.AddMoves(1);
-                        if (Input.GetKeyUp(KeyCode.Alpha1))
-                        {
-                            IsParryStance = true;
-                        }
-                        else if (Input.GetKeyUp(KeyCode.Alpha2))
-                        {
-                            IsParryStance = false;
-                        }
-                        CurrentAction += 1;
+                        IsParryStance = !IsParryStance;
+                        RecoveryTimer = 0.1f;
+                        CurrentPlayerState = PlayerState.Recovering;
+                        GetComponent<MeshRenderer>().material = PlayerColors[3];
                         break;
                     }
 
@@ -1062,5 +1086,203 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 }
             }
         }
+    }
+
+    public Vector3 GetPredictedForwardPosition(float FramesAhead)
+    {
+        Vector3 PredictedForwardPosition = transform.position;
+        float PredictedFrames = FramesAhead * Time.deltaTime;
+
+        if (Moving)
+        {
+            PredictedForwardPosition += (UpVelocity + RightVelocity) * PredictedFrames;
+        }
+        else
+        {
+            switch (CurrentFacingDirection)
+            {
+                case FacingDirection.Up:
+                    {
+                        PredictedForwardPosition += UpVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.UpLeft:
+                    {
+                        PredictedForwardPosition += (UpVelocity - RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.UpRight:
+                    {
+                        PredictedForwardPosition += (UpVelocity + RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Down:
+                    {
+                        PredictedForwardPosition += -UpVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.DownLeft:
+                    {
+                        PredictedForwardPosition += (-UpVelocity - RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.DownRight:
+                    {
+                        PredictedForwardPosition += (-UpVelocity + RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Left:
+                    {
+                        PredictedForwardPosition += -RightVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Right:
+                    {
+                        PredictedForwardPosition += RightVelocity * PredictedFrames;
+                        break;
+                    }
+            }
+        }
+
+        return PredictedForwardPosition;
+    }
+
+    public Vector3 GetPredictedBackwardPosition(float FramesAhead)
+    {
+        Vector3 PredictedBackwardPosition = transform.position;
+        float PredictedFrames = FramesAhead * Time.deltaTime;
+
+        if (Moving)
+        {
+            PredictedBackwardPosition += (UpVelocity + RightVelocity) * PredictedFrames;
+        }
+        else
+        {
+            switch (GetOppositeDirection())
+            {
+                case FacingDirection.Up:
+                    {
+                        PredictedBackwardPosition += UpVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.UpLeft:
+                    {
+                        PredictedBackwardPosition += (UpVelocity - RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.UpRight:
+                    {
+                        PredictedBackwardPosition += (UpVelocity + RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Down:
+                    {
+                        PredictedBackwardPosition += -UpVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.DownLeft:
+                    {
+                        PredictedBackwardPosition += (-UpVelocity - RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.DownRight:
+                    {
+                        PredictedBackwardPosition += (-UpVelocity + RightVelocity) * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Left:
+                    {
+                        PredictedBackwardPosition += -RightVelocity * PredictedFrames;
+                        break;
+                    }
+                case FacingDirection.Right:
+                    {
+                        PredictedBackwardPosition += RightVelocity * PredictedFrames;
+                        break;
+                    }
+            }
+        }
+
+        return PredictedBackwardPosition;
+    }
+
+    public FacingDirection GetOppositeDirection()
+    {
+        switch (CurrentFacingDirection)
+        {
+            case FacingDirection.Up:
+                {
+                    return FacingDirection.Down;
+                }
+            case FacingDirection.UpLeft:
+                {
+                    return FacingDirection.DownRight;
+                }
+            case FacingDirection.UpRight:
+                {
+                    return FacingDirection.DownLeft;
+                }
+            case FacingDirection.Down:
+                {
+                    return FacingDirection.Up;
+                }
+            case FacingDirection.DownLeft:
+                {
+                    return FacingDirection.UpRight;
+                }
+            case FacingDirection.DownRight:
+                {
+                    return FacingDirection.UpLeft;
+                }
+            case FacingDirection.Left:
+                {
+                    return FacingDirection.Right;
+                }
+            case FacingDirection.Right:
+                {
+                    return FacingDirection.Left;
+                }
+        }
+        return FacingDirection.Left;
+    }
+
+    public Vector3 ConvertDirectionToVelocity(FacingDirection Direction)
+    {
+        switch (Direction)
+        {
+            case FacingDirection.Up:
+                {
+                    return UpVelocity;
+                }
+            case FacingDirection.UpLeft:
+                {
+                    return UpVelocity - RightVelocity;
+                }
+            case FacingDirection.UpRight:
+                {
+                    return UpVelocity + RightVelocity;
+                }
+            case FacingDirection.Down:
+                {
+                    return -UpVelocity;
+                }
+            case FacingDirection.DownLeft:
+                {
+                    return -UpVelocity - RightVelocity;
+                }
+            case FacingDirection.DownRight:
+                {
+                    return -UpVelocity + RightVelocity;
+                }
+            case FacingDirection.Left:
+                {
+                    return -RightVelocity;
+                }
+            case FacingDirection.Right:
+                {
+                    return RightVelocity;
+                }
+        }
+        return RightVelocity;
     }
 }

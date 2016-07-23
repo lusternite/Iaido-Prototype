@@ -79,6 +79,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public float CurrentTimer = 0.0f;
     public bool MovementActionCompleted = false;
     public bool MovementUpKeyCompleted = false;
+    public bool PreviousWasUpKey = false;
+    public bool LevelCleared = false;
     public TimeManager ActionClock;
     public MoveManager ActionMoves;
     public ScoreManager ActionScore;
@@ -106,28 +108,68 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             HandleDodge();
             HandleParrying();
             ChangeStance();
+        }
+        else
+        {
+            if (CurrentAction < ActionSequence.Count)
+            {
+                HandleActionSequence();
+            }
+            if (HasDrawn)
+            {
+                ActionClock.AddTime(Time.deltaTime);
+            }
+
+        }
+        TextToggle();
+    }
+
+    void FixedUpdate()
+    {
+        if (IsDrawPhase)
+        {
+            FixedHandleMovement();
+            FixedHandleSlashing();
+            FixedHandleParrying();
+            FixedHandleDodge();
             HandleRecovery();
         }
         else
         {
-            HandleActionSequence();
-            ActionClock.AddTime(Time.deltaTime);
+            if (CurrentAction <= ActionSequence.Count)
+            {
+                FixedHandleActionSequence();
+            }
         }
-        TextToggle();
     }
 
     void HandleDirectionalInput()
     {
         if (InputEnabled)
         {
+            //Keys down
             if (MovementButtonsDown < 2)
             {
                 if (Input.GetKeyDown("up"))
                 {
                     UpArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity += UpVelocity;
-                    CurrentFacingDirection = FacingDirection.Up;
+                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    if (LeftArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.UpLeft;
+                        GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                    }
+                    else if (RightArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.UpRight;
+                        GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                    }
+                    else
+                    {
+                        CurrentFacingDirection = FacingDirection.Up;
+                        GetComponent<Rigidbody>().velocity += UpVelocity;
+                    }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementUpKeyDown);
                     if (MovementTimer > 0.0f || MovementButtonsDown == 2)
@@ -140,8 +182,22 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     LeftArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity -= RightVelocity;
-                    CurrentFacingDirection = FacingDirection.Left;
+                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    if (UpArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.UpLeft;
+                        GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                    }
+                    else if (DownArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.DownLeft;
+                        GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                    }
+                    else
+                    {
+                        CurrentFacingDirection = FacingDirection.Left;
+                        GetComponent<Rigidbody>().velocity += -RightVelocity;
+                    }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementLeftKeyDown);
                     if (MovementTimer > 0.0f || MovementButtonsDown == 2)
@@ -154,8 +210,22 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     DownArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity -= UpVelocity;
-                    CurrentFacingDirection = FacingDirection.Down;
+                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    if (LeftArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.DownLeft;
+                        GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                    }
+                    else if (RightArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.DownRight;
+                        GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                    }
+                    else
+                    {
+                        CurrentFacingDirection = FacingDirection.Down;
+                        GetComponent<Rigidbody>().velocity += -UpVelocity;
+                    }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementDownKeyDown);
                     if (MovementTimer > 0.0f || MovementButtonsDown == 2)
@@ -168,8 +238,22 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     RightArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity += RightVelocity;
-                    CurrentFacingDirection = FacingDirection.Right;
+                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    if (UpArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.UpRight;
+                        GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                    }
+                    else if (DownArrowFlag)
+                    {
+                        CurrentFacingDirection = FacingDirection.DownRight;
+                        GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                    }
+                    else
+                    {
+                        CurrentFacingDirection = FacingDirection.Right;
+                        GetComponent<Rigidbody>().velocity += RightVelocity;
+                    }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementRightKeyDown);
                     if (MovementTimer > 0.0f || MovementButtonsDown == 2)
@@ -199,6 +283,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
 
                 }
             }
+
+            //Keys up
             if (MovementButtonsDown > 0)
             {
                 if (Input.GetKeyUp("right"))
@@ -274,10 +360,15 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     ActionTimers.Add(0.0f);
                 }
             }
-            if (Moving)
-            {
-                MovementTimer += Time.deltaTime;
-            }
+        }
+    }
+
+    void FixedHandleMovement()
+    {
+        //Update movement timer
+        if (Moving)
+        {
+            MovementTimer += Time.fixedDeltaTime;
         }
     }
 
@@ -289,7 +380,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             {
                 GetComponent<Rigidbody>().velocity *= 0.0f;
             }
-            RecoveryTimer -= Time.deltaTime;
+            RecoveryTimer -= Time.fixedDeltaTime;
             if (RecoveryTimer < 0.0f)
             {
                 RecoveryTimer = 0.0f;
@@ -378,11 +469,19 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             }
             ActionSequence.Add(Actions.Attack);
         }
+
+    }
+
+    void FixedHandleSlashing()
+    {
         if (AttackingDuration > 0.0f)
         {
-            AttackingDuration -= Time.deltaTime;
+            AttackingDuration -= Time.fixedDeltaTime;
             if (AttackingDuration < 0.0f)
             {
+                //Readjust
+                //transform.position += GetComponent<Rigidbody>().velocity * AttackingDuration;
+
                 CurrentPlayerState = PlayerState.Recovering;
                 AttackingDuration = 0.0f;
                 //Punish if missed
@@ -432,9 +531,13 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             }
             ActionSequence.Add(Actions.Parry);
         }
+    }
+
+    void FixedHandleParrying()
+    {
         if (ParryDuration > 0.0f)
         {
-            ParryDuration -= Time.deltaTime;
+            ParryDuration -= Time.fixedDeltaTime;
             if (ParryDuration < 0.0f)
             {
                 ParryDuration = 0.0f;
@@ -460,7 +563,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             //RightVelocity *= 10.0f;
             if (IsParryStance)
             {
-                EvadeDuration = 0.2f;
+                EvadeDuration = 0.22f;
             }
             else
             {
@@ -525,20 +628,27 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             ActionSequence.Add(Actions.Evade);
             if (IsParryStance)
             {
-                ActionTimers.Add(0.3f);
+                ActionTimers.Add(0.42f);
             }
             else
             {
                 ActionTimers.Add(0.2f);
             }
         }
+    }
+
+    void FixedHandleDodge()
+    {
         if (EvadeDuration > 0.0f)
         {
-            EvadeDuration -= Time.deltaTime;
+            EvadeDuration -= Time.fixedDeltaTime;
             if (EvadeDuration < 0.0f)
             {
+                //Readjust
+                //transform.position -= GetComponent<Rigidbody>().velocity * EvadeDuration;
+
                 CurrentPlayerState = PlayerState.Recovering;
-                RecoveryTimer = 0.1f;
+                RecoveryTimer = 0.2f;
                 EvadeDuration = 0.0f;
                 GetComponent<Rigidbody>().velocity *= 0.0f;
                 //UpVelocity /= 10.0f;
@@ -633,7 +743,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             }
                             else
                             {
-                                AttackingDuration = 0.5f;
+                                AttackingDuration = 0.4f;
                             }
 
                             //AttackingCooldown = 2.0f;
@@ -696,37 +806,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        if (AttackingDuration > 0.0f)
-                        {
-                            AttackingDuration -= Time.deltaTime;
-                            if (AttackingDuration < 0.0f)
-                            {
-                                CurrentPlayerState = PlayerState.Recovering;
-                                AttackingDuration = 0.0f;
-                                IsAttacking = false;
-                                //ActionSequence.Add(Actions.Attack);
-                                if (IsParryStance)
-                                {
-                                    RecoveryTimer = 0.5f;
-                                    //ActionTimers.Add(0.5f);
-                                }
-                                else
-                                {
-                                    RecoveryTimer = 1.0f;
-                                    //ActionTimers.Add(1.0f);
-                                }
-                                GetComponent<Rigidbody>().velocity *= 0.0f;
-                                //UpVelocity /= 5.0f;
-                                //RightVelocity /= 5.0f;
-                                AttackingTimer = 9000.2f;
-                                UpArrowFlag = false;
-                                DownArrowFlag = false;
-                                LeftArrowFlag = false;
-                                RightArrowFlag = false;
-                                GetComponent<MeshRenderer>().material = PlayerColors[3];
-                                //InputEnabled = true;
-                            }
-                        }
+                        
                         break;
                     }
                 case Actions.Parry:
@@ -738,11 +818,11 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             GetComponent<Rigidbody>().velocity *= 0.0f;
                             ParryDuration = 0.3f;
                             GetComponent<MeshRenderer>().material = PlayerColors[2];
-                            if (!HasDrawn)
-                            {
-                                HasDrawn = true;
-                                IaiParry = true;
-                            }
+                            //if (!HasDrawn)
+                            //{
+                            //    HasDrawn = true;
+                            //    IaiParry = true;
+                            //}
                             //InputEnabled = false;
                             if (Moving)
                             {
@@ -755,24 +835,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        if (ParryDuration > 0.0f)
-                        {
-                            ParryDuration -= Time.deltaTime;
-                            if (ParryDuration < 0.0f)
-                            {
-                                ParryDuration = 0.0f;
-                                RecoveryTimer = 0.2f;
-                                //ActionSequence.Add(Actions.Parry);
-                                //ActionTimers.Add(0.5f);
-                                CurrentPlayerState = PlayerState.Recovering;
-                                GetComponent<MeshRenderer>().material = PlayerColors[3];
-                                UpArrowFlag = false;
-                                DownArrowFlag = false;
-                                LeftArrowFlag = false;
-                                RightArrowFlag = false;
-                                //InputEnabled = true;
-                            }
-                        }
+                        
                         break;
                     }
                 case Actions.Evade:
@@ -784,7 +847,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             //GetComponent<Rigidbody>().velocity *= 8.0f;
                             //UpVelocity *= 10.0f;
                             //RightVelocity *= 10.0f;
-                            EvadeDuration = 0.2f;
+                            EvadeDuration = 0.22f;
                             //InputEnabled = false;
                             switch (CurrentFacingDirection)
                             {
@@ -840,27 +903,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        if (EvadeDuration > 0.0f)
-                        {
-                            EvadeDuration -= Time.deltaTime;
-                            if (EvadeDuration < 0.0f)
-                            {
-                                CurrentPlayerState = PlayerState.Recovering;
-                                RecoveryTimer = 0.1f;
-                                EvadeDuration = 0.0f;
-                                GetComponent<Rigidbody>().velocity *= 0.0f;
-                                //UpVelocity /= 10.0f;
-                                //RightVelocity /= 10.0f;
-                                UpArrowFlag = false;
-                                DownArrowFlag = false;
-                                LeftArrowFlag = false;
-                                RightArrowFlag = false;
-                                GetComponent<MeshRenderer>().material = PlayerColors[3];
-                                //InputEnabled = true;
-                                //ActionSequence.Add(Actions.Evade);
-                                //ActionTimers.Add(0.3f);
-                            }
-                        }
+                        
                         break;
                     }
                 case Actions.StanceChange:
@@ -880,18 +923,21 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             DownArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity -= UpVelocity;
+                            GetComponent<Rigidbody>().velocity *= 0.0f;
                             if (LeftArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownLeft;
+                                GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
                             }
                             else if (RightArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownRight;
+                                GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Down;
+                                GetComponent<Rigidbody>().velocity += -UpVelocity;
                             }
                         }
                         break;
@@ -903,18 +949,21 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             LeftArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity -= RightVelocity;
+                            GetComponent<Rigidbody>().velocity *= 0.0f;
                             if (UpArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpLeft;
+                                GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
                             }
                             else if (DownArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownLeft;
+                                GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Left;
+                                GetComponent<Rigidbody>().velocity += -RightVelocity;
                             }
                         }
                         break;
@@ -926,18 +975,21 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             RightArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity += RightVelocity;
+                            GetComponent<Rigidbody>().velocity *= 0.0f;
                             if (UpArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpRight;
+                                GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
                             }
                             else if (DownArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownRight;
+                                GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Right;
+                                GetComponent<Rigidbody>().velocity += RightVelocity;
                             }
                         }
                         break;
@@ -949,18 +1001,21 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             UpArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity += UpVelocity;
+                            GetComponent<Rigidbody>().velocity *= 0.0f;
                             if (LeftArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpLeft;
+                                GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
                             }
                             else if (RightArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpRight;
+                                GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Up;
+                                GetComponent<Rigidbody>().velocity += UpVelocity;
                             }
                         }
                         break;
@@ -972,14 +1027,24 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             DownArrowFlag = false;
                             MovementActionCompleted = true;
                             GetComponent<Rigidbody>().velocity += UpVelocity;
-                            if (LeftArrowFlag)
+                            if (ActionTimers.Count > CurrentAction + 1)
                             {
-                                CurrentFacingDirection = FacingDirection.Left;
+                                if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
+                                {
+                                    if (LeftArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Left;
+                                        Moving = true;
+                                    }
+                                    else if (RightArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Right;
+                                        Moving = true;
+                                    }
+                                }
                             }
-                            else if (RightArrowFlag)
-                            {
-                                CurrentFacingDirection = FacingDirection.Right;
-                            }
+                            
+                            
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -991,14 +1056,24 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             LeftArrowFlag = false;
                             MovementActionCompleted = true;
                             GetComponent<Rigidbody>().velocity += RightVelocity;
-                            if (UpArrowFlag)
+                            if (ActionTimers.Count > CurrentAction + 1)
                             {
-                                CurrentFacingDirection = FacingDirection.Up;
+                                if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
+                                {
+                                    if (UpArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Up;
+                                        Moving = true;
+                                    }
+                                    else if (DownArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Down;
+                                        Moving = true;
+                                    }
+                                }
                             }
-                            else if (DownArrowFlag)
-                            {
-                                CurrentFacingDirection = FacingDirection.Down;
-                            }
+                            
+                            
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -1010,14 +1085,24 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             RightArrowFlag = false;
                             MovementActionCompleted = true;
                             GetComponent<Rigidbody>().velocity -= RightVelocity;
-                            if (UpArrowFlag)
+                            if (ActionTimers.Count > CurrentAction + 1)
                             {
-                                CurrentFacingDirection = FacingDirection.Up;
+                                if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
+                                {
+                                    if (UpArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Up;
+                                        Moving = true;
+                                    }
+                                    else if (DownArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Down;
+                                        Moving = true;
+                                    }
+                                }
                             }
-                            else if (DownArrowFlag)
-                            {
-                                CurrentFacingDirection = FacingDirection.Down;
-                            }
+                            
+                            
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -1029,13 +1114,21 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             UpArrowFlag = false;
                             MovementActionCompleted = true;
                             GetComponent<Rigidbody>().velocity -= UpVelocity;
-                            if (LeftArrowFlag)
+                            if (ActionTimers.Count > CurrentAction + 1)
                             {
-                                CurrentFacingDirection = FacingDirection.Left;
-                            }
-                            else if (RightArrowFlag)
-                            {
-                                CurrentFacingDirection = FacingDirection.Right;
+                                if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
+                                {
+                                    if (LeftArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Left;
+                                        Moving = true;
+                                    }
+                                    else if (RightArrowFlag)
+                                    {
+                                        CurrentFacingDirection = FacingDirection.Right;
+                                        Moving = true;
+                                    }
+                                }
                             }
                             MovementUpKeyCompleted = true;
                         }
@@ -1046,8 +1139,19 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //handle recovery
         else
         {
-            RecoveryTimer -= Time.deltaTime;
-            if (RecoveryTimer < 0.0f)
+            
+        }
+        
+    }
+
+    void FixedHandleActionSequence()
+    {
+        //Recovery
+        if (RecoveryTimer > 0.0f)
+        {
+            GetComponent<Rigidbody>().velocity *= 0.0f;
+            RecoveryTimer -= Time.fixedDeltaTime;
+            if (RecoveryTimer <= 0.0f)
             {
                 RecoveryTimer = 0.0f;
                 CurrentPlayerState = PlayerState.Idle;
@@ -1065,33 +1169,139 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 }
             }
         }
+
         //Handle action timer
         if (!EnemyCollided)
         {
-            CurrentTimer += Time.deltaTime;
+            CurrentTimer += Time.fixedDeltaTime;
             if (CurrentTimer >= ActionTimers[CurrentAction])
             {
-                CurrentAction += 1;
-                CurrentTimer = 0.0f;
                 MovementActionCompleted = false;
-                if (CurrentAction > ActionSequence.Count)
+                if (CurrentAction + 1 == ActionSequence.Count)
                 {
-                    Destroy(gameObject);
+                    //Destroy(gameObject);
+                    CurrentAction += 1;
                 }
-                if (MovementUpKeyCompleted)
+                else
                 {
-                    MovementUpKeyCompleted = false;
-                    HandleActionSequence();
-                    Debug.Log("upkey skipped");
+                    if (Moving)
+                    {
+                        Debug.Log("Current Timer = " + CurrentTimer);
+                        Debug.Log("Current Action Timer = " + ActionTimers[CurrentAction]);
+                        Debug.Log("Deltatime = " + Time.fixedDeltaTime);
+                        float MovementReadjust = CurrentTimer - ActionTimers[CurrentAction];
+                        //transform.position -= GetComponent<Rigidbody>().velocity * MovementReadjust;
+                        Moving = false;
+                    }
+                    CurrentAction += 1;
+                    CurrentTimer = 0.0f;
+                    RecoveryTimer = 0.0f;
+                    CurrentPlayerState = PlayerState.Idle;
+                    GetComponent<MeshRenderer>().material = PlayerColors[0];
+                    if (MovementUpKeyCompleted)
+                    {
+                        MovementUpKeyCompleted = false;
+                        PreviousWasUpKey = true;
+                        //HandleActionSequence();
+                        //Debug.Log("upkey skipped");
+                    }
+                    else
+                    {
+                        PreviousWasUpKey = false;
+                    }
                 }
             }
         }
+
+        //Attacking
+        if (AttackingDuration > 0.0f)
+        {
+            AttackingDuration -= Time.fixedDeltaTime;
+            if (AttackingDuration < 0.0f)
+            {
+                //Readjust
+                //transform.position += GetComponent<Rigidbody>().velocity * AttackingDuration;
+
+                CurrentPlayerState = PlayerState.Recovering;
+                AttackingDuration = 0.0f;
+                IsAttacking = false;
+                //ActionSequence.Add(Actions.Attack);
+                if (IsParryStance)
+                {
+                    RecoveryTimer = 0.5f;
+                    //ActionTimers.Add(0.5f);
+                }
+                else
+                {
+                    RecoveryTimer = 1.0f;
+                    //ActionTimers.Add(1.0f);
+                }
+                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //UpVelocity /= 5.0f;
+                //RightVelocity /= 5.0f;
+                AttackingTimer = 9000.2f;
+                UpArrowFlag = false;
+                DownArrowFlag = false;
+                LeftArrowFlag = false;
+                RightArrowFlag = false;
+                GetComponent<MeshRenderer>().material = PlayerColors[3];
+                //InputEnabled = true;
+            }
+        }
+
+        //Parry
+        if (ParryDuration > 0.0f)
+        {
+            ParryDuration -= Time.fixedDeltaTime;
+            if (ParryDuration < 0.0f)
+            {
+                ParryDuration = 0.0f;
+                RecoveryTimer = 0.2f;
+                //ActionSequence.Add(Actions.Parry);
+                //ActionTimers.Add(0.5f);
+                CurrentPlayerState = PlayerState.Recovering;
+                GetComponent<MeshRenderer>().material = PlayerColors[3];
+                UpArrowFlag = false;
+                DownArrowFlag = false;
+                LeftArrowFlag = false;
+                RightArrowFlag = false;
+                //InputEnabled = true;
+            }
+        }
+
+        //Dodge
+        if (EvadeDuration > 0.0f)
+        {
+            EvadeDuration -= Time.fixedDeltaTime;
+            if (EvadeDuration < 0.0f)
+            {
+                //Readjust
+                //transform.position -= GetComponent<Rigidbody>().velocity * EvadeDuration;
+
+                CurrentPlayerState = PlayerState.Recovering;
+                RecoveryTimer = 0.2f;
+                EvadeDuration = 0.0f;
+                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //UpVelocity /= 10.0f;
+                //RightVelocity /= 10.0f;
+                UpArrowFlag = false;
+                DownArrowFlag = false;
+                LeftArrowFlag = false;
+                RightArrowFlag = false;
+                GetComponent<MeshRenderer>().material = PlayerColors[3];
+                //InputEnabled = true;
+                //ActionSequence.Add(Actions.Evade);
+                //ActionTimers.Add(0.3f);
+            }
+        }
+
+        
     }
 
     public Vector3 GetPredictedForwardPosition(float FramesAhead)
     {
         Vector3 PredictedForwardPosition = transform.position;
-        float PredictedFrames = FramesAhead * Time.deltaTime;
+        float PredictedFrames = FramesAhead * Time.fixedDeltaTime;
 
         if (Moving)
         {
@@ -1150,7 +1360,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public Vector3 GetPredictedBackwardPosition(float FramesAhead)
     {
         Vector3 PredictedBackwardPosition = transform.position;
-        float PredictedFrames = FramesAhead * Time.deltaTime;
+        float PredictedFrames = FramesAhead * Time.fixedDeltaTime;
 
         if (Moving)
         {
@@ -1284,5 +1494,27 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 }
         }
         return RightVelocity;
+    }
+
+    bool IsUpkey(Actions Action)
+    {
+        if (Action == Actions.MovementDownKeyUp || Action == Actions.MovementLeftKeyUp || Action == Actions.MovementRightKeyUp || Action == Actions.MovementUpKeyUp)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public void CheckWin()
+    {
+        GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        if (Enemies.Length == 0)
+        {
+            LevelCleared = true;
+            HandleDraw();
+        }
     }
 }

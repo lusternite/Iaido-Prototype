@@ -194,7 +194,7 @@ public class NinjaBehaviour : MonoBehaviour {
             Debug.Log("AI timer = " + AttackTimer);
 
             Col.transform.rotation = Quaternion.identity;
-            Debug.Log(Col.transform.rotation);
+            //Debug.Log(Col.transform.rotation);
         }
     }
 

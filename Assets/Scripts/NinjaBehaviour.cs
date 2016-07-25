@@ -47,7 +47,7 @@ public class NinjaBehaviour : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         if (IsActive)
         {
@@ -338,6 +338,272 @@ public class NinjaBehaviour : MonoBehaviour {
         }
     }
 
+    void OnTriggerEnter(Collider Col)
+    {
+        if (Col.gameObject.tag == "Player")
+        {
+            PlayerScript.CurrentVelocity *= 0.0f;
+            if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Attacking)
+            {
+                if (PlayerScript.AttackingTimer < AttackTimer)
+                {
+                    PlayerScript.UpArrowFlag = false;
+                    PlayerScript.DownArrowFlag = false;
+                    PlayerScript.LeftArrowFlag = false;
+                    PlayerScript.RightArrowFlag = false;
+                    PlayerScript.GetComponent<Rigidbody>().velocity *= 0.0f;
+                    PlayerScript.IsAttacking = false;
+                    //PlayerScript.UpVelocity /= 5.0f;
+                    //PlayerScript.RightVelocity /= 5.0f;
+                    PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
+                    if (!PlayerScript.HasDrawn)
+                    {
+                        PlayerScript.HasDrawn = true;
+
+                        PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Idle;
+                        PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
+                        if (IsPlanningPhase)
+                        {
+                            PlayerScript.InputEnabled = true;
+                            if (PlayerScript.IsParryStance)
+                            {
+                                //RecoveryTimer = 0.3f;
+                                PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.3f);
+                            }
+                            else
+                            {
+                                //RecoveryTimer = 0.5f;
+                                PlayerScript.ActionTimers.Add(0.4f - PlayerScript.AttackingDuration + 0.6f);
+                            }
+                        }
+                        else
+                        {
+                            PlayerScript.CurrentAction += 1;
+                            PlayerScript.CurrentTimer = 0.0f;
+                        }
+
+                    }
+                    else
+                    {
+                        if (PlayerScript.IsParryStance)
+                        {
+                            PlayerScript.RecoveryTimer = 0.3f;
+                        }
+                        else
+                        {
+                            PlayerScript.RecoveryTimer = 0.6f;
+                        }
+                        PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
+                        PlayerScript.EnemyCollided = true;
+                        if (IsPlanningPhase)
+                        {
+                            if (PlayerScript.IsParryStance)
+                            {
+                                RecoveryTimer = 0.3f;
+                                PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.3f);
+                            }
+                            else
+                            {
+                                RecoveryTimer = 0.6f;
+                                PlayerScript.ActionTimers.Add(0.4f - PlayerScript.AttackingDuration + 0.6f);
+                            }
+                        }
+                    }
+                    PlayerScript.AttackingDuration = 0.0f;
+                    if (IsPlanningPhase)
+                    {
+                        IsActive = false;
+                        GetComponent<MeshRenderer>().enabled = false;
+                        GetComponent<SphereCollider>().enabled = false;
+                        transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
+                        PlayerScript.CheckWin();
+                    }
+                    else
+                    {
+                        Destroy(gameObject);
+                    }
+                }
+            }
+            else if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Parrying)
+            {
+                PlayerScript.UpArrowFlag = false;
+                PlayerScript.DownArrowFlag = false;
+                PlayerScript.LeftArrowFlag = false;
+                PlayerScript.RightArrowFlag = false;
+
+                StunDuration = 2.0f;
+                CurrentNinjaState = NinjaState.Stunned;
+                GetComponent<MeshRenderer>().material = NinjaColors[2];
+                PlayerScript.RecoveryTimer = 0.2f;
+                PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
+                PlayerScript.EnemyCollided = true;
+                PlayerScript.ParryDuration = 0.0f;
+                PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
+                AttackTimer = 9000.1f;
+                if (IsPlanningPhase)
+                {
+                    PlayerScript.ActionTimers.Add(0.3f - PlayerScript.ParryDuration + 0.2f);
+                }
+            }
+            else if (CurrentNinjaState == NinjaState.Attacking)
+            {
+                //Destroy(Col.gameObject);
+                Col.gameObject.GetComponent<PuzzlePlayerBehaviour>().enabled = false;
+                Col.gameObject.GetComponent<MeshRenderer>().enabled = false;
+                Col.gameObject.GetComponent<BoxCollider>().enabled = false;
+                Col.GetComponent<Rigidbody>().velocity *= 0.0f;
+                IsActive = false;
+                GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
+                foreach (GameObject enemy in Enemies)
+                {
+                    enemy.GetComponent<NinjaBehaviour>().IsActive = false;
+                }
+                if (PlayerScript.IsDrawPhase)
+                {
+                    PlayerScript.enabled = true;
+                    PlayerScript.GetComponent<MeshRenderer>().enabled = true;
+                    PlayerScript.GetComponent<BoxCollider>().enabled = true;
+                    PlayerScript.HandleDraw();
+                }
+            }
+
+            Col.transform.rotation = Quaternion.identity;
+        }
+    }
+
+    void OnTriggerStay(Collider Col)
+    {
+        if (Col.gameObject.tag == "Player")
+        {
+            PlayerScript.CurrentVelocity *= 0.0f;
+            if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Attacking)
+            {
+                if (PlayerScript.AttackingTimer < AttackTimer)
+                {
+                    PlayerScript.UpArrowFlag = false;
+                    PlayerScript.DownArrowFlag = false;
+                    PlayerScript.LeftArrowFlag = false;
+                    PlayerScript.RightArrowFlag = false;
+                    PlayerScript.GetComponent<Rigidbody>().velocity *= 0.0f;
+                    PlayerScript.IsAttacking = false;
+                    //PlayerScript.UpVelocity /= 5.0f;
+                    //PlayerScript.RightVelocity /= 5.0f;
+                    PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
+                    if (!PlayerScript.HasDrawn)
+                    {
+                        PlayerScript.HasDrawn = true;
+
+                        PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Idle;
+                        PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[0];
+                        if (IsPlanningPhase)
+                        {
+                            PlayerScript.InputEnabled = true;
+                            if (PlayerScript.IsParryStance)
+                            {
+                                //RecoveryTimer = 0.3f;
+                                PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.3f);
+                            }
+                            else
+                            {
+                                //RecoveryTimer = 0.5f;
+                                PlayerScript.ActionTimers.Add(0.4f - PlayerScript.AttackingDuration + 0.6f);
+                            }
+                        }
+                        else
+                        {
+                            PlayerScript.CurrentAction += 1;
+                            PlayerScript.CurrentTimer = 0.0f;
+                        }
+
+                    }
+                    else
+                    {
+                        if (PlayerScript.IsParryStance)
+                        {
+                            PlayerScript.RecoveryTimer = 0.3f;
+                        }
+                        else
+                        {
+                            PlayerScript.RecoveryTimer = 0.6f;
+                        }
+                        PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
+                        PlayerScript.EnemyCollided = true;
+                        if (IsPlanningPhase)
+                        {
+                            if (PlayerScript.IsParryStance)
+                            {
+                                RecoveryTimer = 0.3f;
+                                PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.3f);
+                            }
+                            else
+                            {
+                                RecoveryTimer = 0.6f;
+                                PlayerScript.ActionTimers.Add(0.4f - PlayerScript.AttackingDuration + 0.6f);
+                            }
+                        }
+                    }
+                    PlayerScript.AttackingDuration = 0.0f;
+                    if (IsPlanningPhase)
+                    {
+                        IsActive = false;
+                        GetComponent<MeshRenderer>().enabled = false;
+                        GetComponent<SphereCollider>().enabled = false;
+                        transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
+                        PlayerScript.CheckWin();
+                    }
+                    else
+                    {
+                        Destroy(gameObject);
+                    }
+                }
+            }
+            else if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Parrying)
+            {
+                PlayerScript.UpArrowFlag = false;
+                PlayerScript.DownArrowFlag = false;
+                PlayerScript.LeftArrowFlag = false;
+                PlayerScript.RightArrowFlag = false;
+
+                StunDuration = 2.0f;
+                CurrentNinjaState = NinjaState.Stunned;
+                GetComponent<MeshRenderer>().material = NinjaColors[2];
+                PlayerScript.RecoveryTimer = 0.2f;
+                PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
+                PlayerScript.EnemyCollided = true;
+                PlayerScript.ParryDuration = 0.0f;
+                PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
+                AttackTimer = 9000.1f;
+                if (IsPlanningPhase)
+                {
+                    PlayerScript.ActionTimers.Add(0.3f - PlayerScript.ParryDuration + 0.2f);
+                }
+            }
+            else if (CurrentNinjaState == NinjaState.Attacking)
+            {
+                //Destroy(Col.gameObject);
+                Col.gameObject.GetComponent<PuzzlePlayerBehaviour>().enabled = false;
+                Col.gameObject.GetComponent<MeshRenderer>().enabled = false;
+                Col.gameObject.GetComponent<BoxCollider>().enabled = false;
+                Col.GetComponent<Rigidbody>().velocity *= 0.0f;
+                IsActive = false;
+                GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
+                foreach (GameObject enemy in Enemies)
+                {
+                    enemy.GetComponent<PuzzleEnemyBehaviour>().IsActive = false;
+                }
+                if (PlayerScript.IsDrawPhase)
+                {
+                    PlayerScript.enabled = true;
+                    PlayerScript.GetComponent<MeshRenderer>().enabled = true;
+                    PlayerScript.GetComponent<BoxCollider>().enabled = true;
+                    PlayerScript.HandleDraw();
+                }
+            }
+
+            Col.transform.rotation = Quaternion.identity;
+        }
+    }
+
     void DoThings()
     {
         switch (CurrentNinjaState)
@@ -376,7 +642,7 @@ public class NinjaBehaviour : MonoBehaviour {
                 }
             case NinjaState.Attacking:
                 {
-                    transform.position = Vector3.MoveTowards(transform.position, AttackPosition, NinjaVelocity * Time.deltaTime * 5.0f);
+                    transform.position = Vector3.MoveTowards(transform.position, AttackPosition, NinjaVelocity * Time.fixedDeltaTime * 5.0f);
                     if (Vector3.Distance(transform.position, AttackPosition) == 0.0f)
                     {
                         CurrentNinjaState = NinjaState.Recovering;
@@ -388,8 +654,8 @@ public class NinjaBehaviour : MonoBehaviour {
                 }
             case NinjaState.Evading:
                 {
-                    EvadeTimer += Time.deltaTime;
-                    transform.position += EvadeDirection * NinjaVelocity * 3.0f * Time.deltaTime;
+                    EvadeTimer += Time.fixedDeltaTime;
+                    transform.position += EvadeDirection * NinjaVelocity * 3.0f * Time.fixedDeltaTime;
                     if (EvadeTimer >= EvadeDuration)
                     {
                         //If distance between ninja and player is less than 8, attack the player
@@ -411,7 +677,7 @@ public class NinjaBehaviour : MonoBehaviour {
                 }
             case NinjaState.Recovering:
                 {
-                    RecoveryTimer -= Time.deltaTime;
+                    RecoveryTimer -= Time.fixedDeltaTime;
                     if (RecoveryTimer <= 0.0f)
                     {
                         CurrentNinjaState = NinjaState.Seeking;
@@ -421,7 +687,7 @@ public class NinjaBehaviour : MonoBehaviour {
                 }
             case NinjaState.Stunned:
                 {
-                    StunDuration -= Time.deltaTime;
+                    StunDuration -= Time.fixedDeltaTime;
                     if (StunDuration <= 0.0f)
                     {
                         CurrentNinjaState = NinjaState.Seeking;
@@ -549,7 +815,7 @@ public class NinjaBehaviour : MonoBehaviour {
         Vector3 TargetDirection = Vector3.Normalize(PlayerScript.GetPredictedBackwardPosition(60.0f) - transform.position);
         if (DetermineIfCanAttack())
         {
-            transform.position += TargetDirection * NinjaVelocity * Time.deltaTime;
+            transform.position += TargetDirection * NinjaVelocity * Time.fixedDeltaTime;
         }
         else
         {
@@ -558,11 +824,11 @@ public class NinjaBehaviour : MonoBehaviour {
             {
                 Vector3 AvoidanceForce = Vector3.Normalize(CollisionDetection - ThePlayer.transform.position) * 0.5f;
                 Debug.Log("Avoidance force = " + AvoidanceForce);
-                transform.position += (TargetDirection + AvoidanceForce) * NinjaVelocity * Time.deltaTime;
+                transform.position += (TargetDirection + AvoidanceForce) * NinjaVelocity * Time.fixedDeltaTime;
             }
             else
             {
-                transform.position += TargetDirection * NinjaVelocity * Time.deltaTime;
+                transform.position += TargetDirection * NinjaVelocity * Time.fixedDeltaTime;
             }
             Debug.Log("Cannot Attack");
         }

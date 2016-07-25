@@ -17,6 +17,8 @@ public class ScoreManager : MonoBehaviour {
     public string AlphabeticalScore = "A";
     public TimeManager TimeScore;
     public MoveManager MoveScore;
+    public float TimeMinSeconds = 18.0f;
+    public int MoveMin = 20;
 
 	// Use this for initialization
 	void Start () {
@@ -27,35 +29,35 @@ public class ScoreManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-	
+        CalculateScore();
 	}
 
     public void CalculateScore()
     {
         float NumericalTimeScore = 0.0f;
-        if (TimeScore.GetTime() <= 18.0f)
+        if (TimeScore.GetTime() <= TimeMinSeconds)
         {
             NumericalTimeScore = 50.0f;
         }
         else
         {
-            NumericalTimeScore = 50.0f - ((TimeScore.GetTime() - 18.0f) * 4);
+            NumericalTimeScore = 50.0f - ((TimeScore.GetTime() - TimeMinSeconds) * 4.0f);
         }
         float NumericalMoveScore = 0.0f;
-        if (MoveScore.GetMoves() <= 20)
+        if (MoveScore.GetMoves() <= MoveMin)
         {
             NumericalMoveScore = 50.0f;
         }
         else
         {
-            NumericalMoveScore = 50.0f - ((MoveScore.GetMoves() - 20) * 3);
+            NumericalMoveScore = 50.0f - ((MoveScore.GetMoves() - MoveMin) * 3.0f);
         }
         NumericalScore = NumericalMoveScore + NumericalTimeScore;
-        if (NumericalScore >= 90.0f)
+        if (NumericalScore >= 95.0f)
         {
             AlphabeticalScore = "A";
         }
-        else if (NumericalScore >= 80.0f)
+        else if (NumericalScore >= 85.0f)
         {
             AlphabeticalScore = "B";
         }
@@ -75,5 +77,6 @@ public class ScoreManager : MonoBehaviour {
         {
             AlphabeticalScore = "F";
         }
+        GetComponent<Text>().text = "Score: " + AlphabeticalScore;
     }
 }

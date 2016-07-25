@@ -29,5 +29,13 @@ public class GameManager : MonoBehaviour {
             Player.GetComponent<BoxCollider>().enabled = true;
             Player.HandleDraw();
         }
+        if (Input.GetKeyUp(KeyCode.Y))
+        {
+            GameObject[] AttackRadii = GameObject.FindGameObjectsWithTag("Attack Radius");
+            foreach (GameObject AttackRadius in AttackRadii)
+            {
+                AttackRadius.GetComponent<MeshRenderer>().enabled = !AttackRadius.GetComponent<MeshRenderer>().enabled;
+            }
+        }
     }
 }

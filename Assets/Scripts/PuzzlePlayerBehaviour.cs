@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -13,8 +14,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         Evading,
         Recovering
     }
-
-
+    public Vector3 StartingPosition;
+    public float FixedTime = 0.02f;
     public float MoveSpeed = 2.0f;
     public bool UpArrowFlag = false;
     public bool LeftArrowFlag = false;
@@ -22,6 +23,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public bool RightArrowFlag = false;
     public Vector3 UpVelocity;
     public Vector3 RightVelocity;
+    public Vector3 CurrentVelocity;
     public bool IsAttacking = false;
     public float AttackingTimer = 9000.2f;
     public float AttackingCooldown = 0.0f;
@@ -81,6 +83,9 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public bool MovementUpKeyCompleted = false;
     public bool PreviousWasUpKey = false;
     public bool LevelCleared = false;
+    public bool WinSequence = false;
+    public float WinTimer = 0.0f;
+    public float WinDuration = 5.0f;
     public TimeManager ActionClock;
     public MoveManager ActionMoves;
     public ScoreManager ActionScore;
@@ -96,6 +101,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         ActionMoves = FindObjectOfType<MoveManager>();
         ActionScore = FindObjectOfType<ScoreManager>();
         InformationText = GameObject.FindGameObjectWithTag("Information").GetComponent<Canvas>();
+        StartingPosition = transform.position;
     }
 
     // Update is called once per frame
@@ -121,18 +127,23 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             }
 
         }
+        if (WinSequence)
+        {
+            HandleWin();
+        }
         TextToggle();
     }
 
     void FixedUpdate()
     {
+        //Debug.Log("player executed");
         if (IsDrawPhase)
         {
+            HandleRecovery();
             FixedHandleMovement();
             FixedHandleSlashing();
             FixedHandleParrying();
             FixedHandleDodge();
-            HandleRecovery();
         }
         else
         {
@@ -141,6 +152,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 FixedHandleActionSequence();
             }
         }
+        transform.position += CurrentVelocity * FixedTime;
     }
 
     void HandleDirectionalInput()
@@ -154,21 +166,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     UpArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    //GetComponent<Rigidbody>().velocity *= 0.0f;
+                    CurrentVelocity *= 0.0f;
                     if (LeftArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.UpLeft;
-                        GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                        CurrentVelocity = UpVelocity - RightVelocity;
                     }
                     else if (RightArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.UpRight;
-                        GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                        CurrentVelocity = UpVelocity + RightVelocity;
                     }
                     else
                     {
                         CurrentFacingDirection = FacingDirection.Up;
-                        GetComponent<Rigidbody>().velocity += UpVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity;
+                        CurrentVelocity = UpVelocity;
                     }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementUpKeyDown);
@@ -182,21 +198,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     LeftArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    //GetComponent<Rigidbody>().velocity *= 0.0f;
+                    CurrentVelocity *= 0.0f;
                     if (UpArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.UpLeft;
-                        GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                        CurrentVelocity = UpVelocity - RightVelocity;
                     }
                     else if (DownArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.DownLeft;
-                        GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                        CurrentVelocity = -UpVelocity - RightVelocity;
                     }
                     else
                     {
                         CurrentFacingDirection = FacingDirection.Left;
-                        GetComponent<Rigidbody>().velocity += -RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += -RightVelocity;
+                        CurrentVelocity = -RightVelocity;
                     }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementLeftKeyDown);
@@ -210,21 +230,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     DownArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    //GetComponent<Rigidbody>().velocity *= 0.0f;
+                    CurrentVelocity *= 0.0f;
                     if (LeftArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.DownLeft;
-                        GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                        CurrentVelocity = -UpVelocity - RightVelocity;
                     }
                     else if (RightArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.DownRight;
-                        GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                        CurrentVelocity = -UpVelocity + RightVelocity;
                     }
                     else
                     {
                         CurrentFacingDirection = FacingDirection.Down;
-                        GetComponent<Rigidbody>().velocity += -UpVelocity;
+                        //GetComponent<Rigidbody>().velocity += -UpVelocity;
+                        CurrentVelocity = -UpVelocity;
                     }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementDownKeyDown);
@@ -238,21 +262,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 {
                     RightArrowFlag = true;
                     Moving = true;
-                    GetComponent<Rigidbody>().velocity *= 0.0f;
+                    //GetComponent<Rigidbody>().velocity *= 0.0f;
+                    CurrentVelocity *= 0.0f;
                     if (UpArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.UpRight;
-                        GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                        CurrentVelocity = UpVelocity + RightVelocity;
                     }
                     else if (DownArrowFlag)
                     {
                         CurrentFacingDirection = FacingDirection.DownRight;
-                        GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                        CurrentVelocity = -UpVelocity + RightVelocity;
                     }
                     else
                     {
                         CurrentFacingDirection = FacingDirection.Right;
-                        GetComponent<Rigidbody>().velocity += RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += RightVelocity;
+                        CurrentVelocity = RightVelocity;
                     }
                     MovementButtonsDown += 1;
                     ActionSequence.Add(Actions.MovementRightKeyDown);
@@ -292,7 +320,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     if (RightArrowFlag)
                     {
                         RightArrowFlag = false;
-                        GetComponent<Rigidbody>().velocity -= RightVelocity;
+                        //GetComponent<Rigidbody>().velocity -= RightVelocity;
+                        CurrentVelocity -= RightVelocity;
                         MovementButtonsDown -= 1;
                         ActionSequence.Add(Actions.MovementRightKeyUp);
                         ActionTimers.Add(MovementTimer);
@@ -304,7 +333,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     if (UpArrowFlag)
                     {
                         UpArrowFlag = false;
-                        GetComponent<Rigidbody>().velocity -= UpVelocity;
+                        //GetComponent<Rigidbody>().velocity -= UpVelocity;
+                        CurrentVelocity -= UpVelocity;
                         MovementButtonsDown -= 1;
                         ActionSequence.Add(Actions.MovementUpKeyUp);
                         ActionTimers.Add(MovementTimer);
@@ -316,7 +346,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     if (DownArrowFlag)
                     {
                         DownArrowFlag = false;
-                        GetComponent<Rigidbody>().velocity += UpVelocity;
+                        //GetComponent<Rigidbody>().velocity += UpVelocity;
+                        CurrentVelocity += UpVelocity;
                         MovementButtonsDown -= 1;
                         ActionSequence.Add(Actions.MovementDownKeyUp);
                         ActionTimers.Add(MovementTimer);
@@ -328,7 +359,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     if (LeftArrowFlag)
                     {
                         LeftArrowFlag = false;
-                        GetComponent<Rigidbody>().velocity += RightVelocity;
+                        //GetComponent<Rigidbody>().velocity += RightVelocity;
+                        CurrentVelocity += RightVelocity;
                         MovementButtonsDown -= 1;
                         ActionSequence.Add(Actions.MovementLeftKeyUp);
                         ActionTimers.Add(MovementTimer);
@@ -368,7 +400,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Update movement timer
         if (Moving)
         {
-            MovementTimer += Time.fixedDeltaTime;
+            MovementTimer += FixedTime;
         }
     }
 
@@ -376,11 +408,12 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     {
         if (RecoveryTimer > 0.0f)
         {
-            if (GetComponent<Rigidbody>().velocity.magnitude != 0.0f)
-            {
-                GetComponent<Rigidbody>().velocity *= 0.0f;
-            }
-            RecoveryTimer -= Time.fixedDeltaTime;
+            //if (GetComponent<Rigidbody>().velocity.magnitude != 0.0f)
+            //{
+            //    GetComponent<Rigidbody>().velocity *= 0.0f;
+            //}
+            CurrentVelocity *= 0.0f;
+            RecoveryTimer -= FixedTime;
             if (RecoveryTimer < 0.0f)
             {
                 RecoveryTimer = 0.0f;
@@ -417,42 +450,50 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             {
                 case FacingDirection.Right:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f;
+                        CurrentVelocity = RightVelocity * 5.0f;
                         break;
                     }
                 case FacingDirection.UpRight:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
+                        CurrentVelocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
                         break;
                     }
                 case FacingDirection.Up:
                     {
-                        GetComponent<Rigidbody>().velocity = UpVelocity * 5.0f;
+                        //GetComponent<Rigidbody>().velocity = UpVelocity * 5.0f;
+                        CurrentVelocity = UpVelocity * 5.0f;
                         break;
                     }
                 case FacingDirection.UpLeft:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
+                        CurrentVelocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
                         break;
                     }
                 case FacingDirection.Left:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f;
+                        CurrentVelocity = RightVelocity * -5.0f;
                         break;
                     }
                 case FacingDirection.DownLeft:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
+                        CurrentVelocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
                         break;
                     }
                 case FacingDirection.Down:
                     {
-                        GetComponent<Rigidbody>().velocity = UpVelocity * -5.0f;
+                        //GetComponent<Rigidbody>().velocity = UpVelocity * -5.0f;
+                        CurrentVelocity = UpVelocity * -5.0f;
                         break;
                     }
                 case FacingDirection.DownRight:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
+                        CurrentVelocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
                         break;
                     }
             }
@@ -476,8 +517,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     {
         if (AttackingDuration > 0.0f)
         {
-            AttackingDuration -= Time.fixedDeltaTime;
-            if (AttackingDuration < 0.0f)
+            AttackingDuration -= FixedTime;
+            if (AttackingDuration <= 0.0f)
             {
                 //Readjust
                 //transform.position += GetComponent<Rigidbody>().velocity * AttackingDuration;
@@ -496,7 +537,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     ActionTimers.Add(1.4f);
                 }
                 IsAttacking = false;
-                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //GetComponent<Rigidbody>().velocity *= 0.0f;
+                CurrentVelocity *= 0.0f;
                 //UpVelocity /= 5.0f;
                 //RightVelocity /= 5.0f;
                 AttackingTimer = 9000.2f;
@@ -514,7 +556,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.W) && ParryDuration == 0.0f && CurrentPlayerState == PlayerState.Idle && IsParryStance && InputEnabled)
         {
             CurrentPlayerState = PlayerState.Parrying;
-            GetComponent<Rigidbody>().velocity *= 0.0f;
+            //GetComponent<Rigidbody>().velocity *= 0.0f;
+            CurrentVelocity *= 0.0f;
             ParryDuration = 0.3f;
             GetComponent<MeshRenderer>().material = PlayerColors[2];
             InputEnabled = false;
@@ -537,8 +580,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     {
         if (ParryDuration > 0.0f)
         {
-            ParryDuration -= Time.fixedDeltaTime;
-            if (ParryDuration < 0.0f)
+            ParryDuration -= FixedTime;
+            if (ParryDuration <= 0.0f)
             {
                 ParryDuration = 0.0f;
                 RecoveryTimer = 0.2f;
@@ -575,42 +618,50 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             {
                 case FacingDirection.Right:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f;
+                        CurrentVelocity = RightVelocity * 10.0f;
                         break;
                     }
                 case FacingDirection.UpRight:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
+                        CurrentVelocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
                         break;
                     }
                 case FacingDirection.Up:
                     {
-                        GetComponent<Rigidbody>().velocity = UpVelocity * 10.0f;
+                        //GetComponent<Rigidbody>().velocity = UpVelocity * 10.0f;
+                        CurrentVelocity = UpVelocity * 10.0f;
                         break;
                     }
                 case FacingDirection.UpLeft:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
+                        CurrentVelocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
                         break;
                     }
                 case FacingDirection.Left:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f;
+                        CurrentVelocity = RightVelocity * -10.0f;
                         break;
                     }
                 case FacingDirection.DownLeft:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
+                        CurrentVelocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
                         break;
                     }
                 case FacingDirection.Down:
                     {
-                        GetComponent<Rigidbody>().velocity = UpVelocity * -10.0f;
+                        //GetComponent<Rigidbody>().velocity = UpVelocity * -10.0f;
+                        CurrentVelocity = UpVelocity * -10.0f;
                         break;
                     }
                 case FacingDirection.DownRight:
                     {
-                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
+                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
+                        CurrentVelocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
                         break;
                     }
             }
@@ -641,8 +692,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     {
         if (EvadeDuration > 0.0f)
         {
-            EvadeDuration -= Time.fixedDeltaTime;
-            if (EvadeDuration < 0.0f)
+            EvadeDuration -= FixedTime;
+            if (EvadeDuration <= 0.0f)
             {
                 //Readjust
                 //transform.position -= GetComponent<Rigidbody>().velocity * EvadeDuration;
@@ -650,7 +701,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 CurrentPlayerState = PlayerState.Recovering;
                 RecoveryTimer = 0.2f;
                 EvadeDuration = 0.0f;
-                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //GetComponent<Rigidbody>().velocity *= 0.0f;
+                CurrentVelocity *= 0.0f;
                 //UpVelocity /= 10.0f;
                 //RightVelocity /= 10.0f;
                 UpArrowFlag = false;
@@ -668,8 +720,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         {
             IsParryStance = true;
             ActionSequence.Add(Actions.StanceChange);
-            ActionTimers.Add(0.1f);
-            RecoveryTimer = 0.1f;
+            ActionTimers.Add(0.2f);
+            RecoveryTimer = 0.2f;
             CurrentPlayerState = PlayerState.Recovering;
             GetComponent<MeshRenderer>().material = PlayerColors[3];
         }
@@ -677,8 +729,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         {
             IsParryStance = false;
             ActionSequence.Add(Actions.StanceChange);
-            ActionTimers.Add(0.1f);
-            RecoveryTimer = 0.1f;
+            ActionTimers.Add(0.2f);
+            RecoveryTimer = 0.2f;
             CurrentPlayerState = PlayerState.Recovering;
             GetComponent<MeshRenderer>().material = PlayerColors[3];
         }
@@ -695,19 +747,24 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
 
     public void HandleDraw()
     {
+        Debug.Log("Puzzle Position = " + transform.position);
         IsDrawPhase = false;
-        transform.position = new Vector3(0.0f, 0.52f, 0.0f);
+        transform.position = StartingPosition;
         PuzzleEnemyBehaviour[] Enemies = FindObjectsOfType<PuzzleEnemyBehaviour>();
         foreach (PuzzleEnemyBehaviour i in Enemies)
         {
+            i.GetComponent<MeshRenderer>().enabled = true;
             i.gameObject.GetComponent<BoxCollider>().enabled = true;
             i.Reset();
+            i.transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
         }
         NinjaBehaviour[] Ninjas = FindObjectsOfType<NinjaBehaviour>();
         foreach (NinjaBehaviour j in Ninjas)
         {
+            j.GetComponent<MeshRenderer>().enabled = true;
             j.gameObject.GetComponent<SphereCollider>().enabled = true;
             j.Reset();
+            j.transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
         }
         Arrow[] Arrows = FindObjectsOfType<Arrow>();
         for (int k = Arrows.Length - 1; k >= 0; k--)
@@ -719,11 +776,20 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         CurrentFacingDirection = FacingDirection.Right;
         InputEnabled = false;
         EnemyCollided = false;
-        GetComponent<Rigidbody>().velocity *= 0.0f;
+        //GetComponent<Rigidbody>().velocity *= 0.0f;
+        CurrentVelocity *= 0.0f;
+        RecoveryTimer = 0.0f;
+        EvadeDuration = 0.0f;
+        ParryDuration = 0.0f;
+        UpArrowFlag = false;
+        DownArrowFlag = false;
+        LeftArrowFlag = false;
+        RightArrowFlag = false;
+        Moving = false;
         GameObject.FindGameObjectWithTag("Scoreboard").GetComponent<Canvas>().enabled = true;
     }
 
-    void HandleActionSequence()
+    public void HandleActionSequence()
     {
         if (CurrentPlayerState != PlayerState.Recovering)
         {
@@ -756,42 +822,50 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             {
                                 case FacingDirection.Right:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f;
+                                        CurrentVelocity = RightVelocity * 5.0f;
                                         break;
                                     }
                                 case FacingDirection.UpRight:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
+                                        CurrentVelocity = RightVelocity * 5.0f + UpVelocity * 5.0f;
                                         break;
                                     }
                                 case FacingDirection.Up:
                                     {
-                                        GetComponent<Rigidbody>().velocity = UpVelocity * 5.0f;
+                                        //GetComponent<Rigidbody>().velocity = UpVelocity * 5.0f;
+                                        CurrentVelocity = UpVelocity * 5.0f;
                                         break;
                                     }
                                 case FacingDirection.UpLeft:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
+                                        CurrentVelocity = RightVelocity * -5.0f + UpVelocity * 5.0f;
                                         break;
                                     }
                                 case FacingDirection.Left:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f;
+                                        CurrentVelocity = RightVelocity * -5.0f;
                                         break;
                                     }
                                 case FacingDirection.DownLeft:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
+                                        CurrentVelocity = RightVelocity * -5.0f + UpVelocity * -5.0f;
                                         break;
                                     }
                                 case FacingDirection.Down:
                                     {
-                                        GetComponent<Rigidbody>().velocity = UpVelocity * -5.0f;
+                                        //GetComponent<Rigidbody>().velocity = UpVelocity * -5.0f;
+                                        CurrentVelocity = UpVelocity * -5.0f;
                                         break;
                                     }
                                 case FacingDirection.DownRight:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
+                                        CurrentVelocity = RightVelocity * 5.0f + UpVelocity * -5.0f;
                                         break;
                                     }
                             }
@@ -806,7 +880,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        
+
                         break;
                     }
                 case Actions.Parry:
@@ -815,7 +889,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         {
                             ActionMoves.AddMoves(1);
                             CurrentPlayerState = PlayerState.Parrying;
-                            GetComponent<Rigidbody>().velocity *= 0.0f;
+                            //GetComponent<Rigidbody>().velocity *= 0.0f;
+                            CurrentVelocity *= 0.0f;
                             ParryDuration = 0.3f;
                             GetComponent<MeshRenderer>().material = PlayerColors[2];
                             //if (!HasDrawn)
@@ -835,7 +910,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        
+
                         break;
                     }
                 case Actions.Evade:
@@ -853,42 +928,50 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             {
                                 case FacingDirection.Right:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f;
+                                        CurrentVelocity = RightVelocity * 10.0f;
                                         break;
                                     }
                                 case FacingDirection.UpRight:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
+                                        CurrentVelocity = RightVelocity * 10.0f + UpVelocity * 10.0f;
                                         break;
                                     }
                                 case FacingDirection.Up:
                                     {
-                                        GetComponent<Rigidbody>().velocity = UpVelocity * 10.0f;
+                                        //GetComponent<Rigidbody>().velocity = UpVelocity * 10.0f;
+                                        CurrentVelocity = UpVelocity * 10.0f;
                                         break;
                                     }
                                 case FacingDirection.UpLeft:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
+                                        CurrentVelocity = RightVelocity * -10.0f + UpVelocity * 10.0f;
                                         break;
                                     }
                                 case FacingDirection.Left:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f;
+                                        CurrentVelocity = RightVelocity * -10.0f;
                                         break;
                                     }
                                 case FacingDirection.DownLeft:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
+                                        CurrentVelocity = RightVelocity * -10.0f + UpVelocity * -10.0f;
                                         break;
                                     }
                                 case FacingDirection.Down:
                                     {
-                                        GetComponent<Rigidbody>().velocity = UpVelocity * -10.0f;
+                                        //GetComponent<Rigidbody>().velocity = UpVelocity * -10.0f;
+                                        CurrentVelocity = UpVelocity * -10.0f;
                                         break;
                                     }
                                 case FacingDirection.DownRight:
                                     {
-                                        GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
+                                        //GetComponent<Rigidbody>().velocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
+                                        CurrentVelocity = RightVelocity * 10.0f + UpVelocity * -10.0f;
                                         break;
                                     }
                             }
@@ -903,14 +986,14 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                 Moving = false;
                             }
                         }
-                        
+
                         break;
                     }
                 case Actions.StanceChange:
                     {
                         ActionMoves.AddMoves(1);
                         IsParryStance = !IsParryStance;
-                        RecoveryTimer = 0.1f;
+                        RecoveryTimer = 0.2f;
                         CurrentPlayerState = PlayerState.Recovering;
                         GetComponent<MeshRenderer>().material = PlayerColors[3];
                         break;
@@ -923,21 +1006,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             DownArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity *= 0.0f;
+                            //GetComponent<Rigidbody>().velocity *= 0.0f;
+                            CurrentVelocity *= 0.0f;
                             if (LeftArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownLeft;
-                                GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                                CurrentVelocity = -UpVelocity - RightVelocity;
                             }
                             else if (RightArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownRight;
-                                GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                                CurrentVelocity = -UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Down;
-                                GetComponent<Rigidbody>().velocity += -UpVelocity;
+                                //GetComponent<Rigidbody>().velocity += -UpVelocity;
+                                CurrentVelocity = -UpVelocity;
                             }
                         }
                         break;
@@ -949,21 +1036,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             LeftArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity *= 0.0f;
+                            //GetComponent<Rigidbody>().velocity *= 0.0f;
+                            CurrentVelocity *= 0.0f;
                             if (UpArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpLeft;
-                                GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                                CurrentVelocity = UpVelocity - RightVelocity;
                             }
                             else if (DownArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownLeft;
-                                GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += -UpVelocity - RightVelocity;
+                                CurrentVelocity = -UpVelocity - RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Left;
-                                GetComponent<Rigidbody>().velocity += -RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += -RightVelocity;
+                                CurrentVelocity = -RightVelocity;
                             }
                         }
                         break;
@@ -975,21 +1066,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             RightArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity *= 0.0f;
+                            //GetComponent<Rigidbody>().velocity *= 0.0f;
+                            CurrentVelocity *= 0.0f;
                             if (UpArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpRight;
-                                GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                                CurrentVelocity = UpVelocity + RightVelocity;
                             }
                             else if (DownArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.DownRight;
-                                GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += -UpVelocity + RightVelocity;
+                                CurrentVelocity = -UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Right;
-                                GetComponent<Rigidbody>().velocity += RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += RightVelocity;
+                                CurrentVelocity = RightVelocity;
                             }
                         }
                         break;
@@ -1001,21 +1096,25 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                             Moving = true;
                             UpArrowFlag = true;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity *= 0.0f;
+                            //GetComponent<Rigidbody>().velocity *= 0.0f;
+                            CurrentVelocity *= 0.0f;
                             if (LeftArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpLeft;
-                                GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += UpVelocity - RightVelocity;
+                                CurrentVelocity = UpVelocity - RightVelocity;
                             }
                             else if (RightArrowFlag)
                             {
                                 CurrentFacingDirection = FacingDirection.UpRight;
-                                GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                                //GetComponent<Rigidbody>().velocity += UpVelocity + RightVelocity;
+                                CurrentVelocity = UpVelocity + RightVelocity;
                             }
                             else
                             {
                                 CurrentFacingDirection = FacingDirection.Up;
-                                GetComponent<Rigidbody>().velocity += UpVelocity;
+                                //GetComponent<Rigidbody>().velocity += UpVelocity;
+                                CurrentVelocity = UpVelocity;
                             }
                         }
                         break;
@@ -1026,7 +1125,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         {
                             DownArrowFlag = false;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity += UpVelocity;
+                            //GetComponent<Rigidbody>().velocity += UpVelocity;
+                            CurrentVelocity += UpVelocity;
                             if (ActionTimers.Count > CurrentAction + 1)
                             {
                                 if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
@@ -1043,8 +1143,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                     }
                                 }
                             }
-                            
-                            
+
+
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -1055,7 +1155,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         {
                             LeftArrowFlag = false;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity += RightVelocity;
+                            //GetComponent<Rigidbody>().velocity += RightVelocity;
+                            CurrentVelocity += RightVelocity;
                             if (ActionTimers.Count > CurrentAction + 1)
                             {
                                 if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
@@ -1072,8 +1173,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                     }
                                 }
                             }
-                            
-                            
+
+
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -1084,7 +1185,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         {
                             RightArrowFlag = false;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity -= RightVelocity;
+                            //GetComponent<Rigidbody>().velocity -= RightVelocity;
+                            CurrentVelocity -= RightVelocity;
                             if (ActionTimers.Count > CurrentAction + 1)
                             {
                                 if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
@@ -1101,8 +1203,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                                     }
                                 }
                             }
-                            
-                            
+
+
                             MovementUpKeyCompleted = true;
                         }
                         break;
@@ -1113,7 +1215,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         {
                             UpArrowFlag = false;
                             MovementActionCompleted = true;
-                            GetComponent<Rigidbody>().velocity -= UpVelocity;
+                            //GetComponent<Rigidbody>().velocity -= UpVelocity;
+                            CurrentVelocity -= UpVelocity;
                             if (ActionTimers.Count > CurrentAction + 1)
                             {
                                 if (!(IsUpkey(ActionSequence[CurrentAction + 1]) && ActionTimers[CurrentAction + 1] == 0.0f && ActionTimers[CurrentAction] == 0.0f))
@@ -1139,9 +1242,9 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //handle recovery
         else
         {
-            
+
         }
-        
+
     }
 
     void FixedHandleActionSequence()
@@ -1149,23 +1252,34 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Recovery
         if (RecoveryTimer > 0.0f)
         {
-            GetComponent<Rigidbody>().velocity *= 0.0f;
-            RecoveryTimer -= Time.fixedDeltaTime;
+            //GetComponent<Rigidbody>().velocity *= 0.0f;
+            CurrentVelocity *= 0.0f;
+            RecoveryTimer -= FixedTime;
             if (RecoveryTimer <= 0.0f)
             {
                 RecoveryTimer = 0.0f;
-                CurrentPlayerState = PlayerState.Idle;
-                GetComponent<MeshRenderer>().material = PlayerColors[0];
+
                 if (EnemyCollided)
                 {
+                    CurrentPlayerState = PlayerState.Idle;
+                    GetComponent<MeshRenderer>().material = PlayerColors[0];
                     CurrentAction += 1;
                     CurrentTimer = 0.0f;
                     EnemyCollided = false;
-                    if (CurrentAction > ActionSequence.Count)
+                    if (CurrentAction == ActionSequence.Count)
                     {
-                        Destroy(gameObject);
+                        Debug.Log("Action Position = " + transform.position);
+                        if (LevelCleared)
+                        {
+                            WinSequence = true;
+                        }
+                        CurrentAction += 1;
                     }
                     MovementActionCompleted = false;
+                    if (Moving)
+                    {
+                        Moving = false;
+                    }
                 }
             }
         }
@@ -1173,14 +1287,19 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Handle action timer
         if (!EnemyCollided)
         {
-            CurrentTimer += Time.fixedDeltaTime;
+            CurrentTimer += FixedTime;
             if (CurrentTimer >= ActionTimers[CurrentAction])
             {
                 MovementActionCompleted = false;
                 if (CurrentAction + 1 == ActionSequence.Count)
                 {
                     //Destroy(gameObject);
+                    if (LevelCleared)
+                    {
+                        WinSequence = true;
+                    }
                     CurrentAction += 1;
+                    Debug.Log("Action Position = " + transform.position);
                 }
                 else
                 {
@@ -1188,7 +1307,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     {
                         Debug.Log("Current Timer = " + CurrentTimer);
                         Debug.Log("Current Action Timer = " + ActionTimers[CurrentAction]);
-                        Debug.Log("Deltatime = " + Time.fixedDeltaTime);
+                        Debug.Log("Deltatime = " + FixedTime);
                         float MovementReadjust = CurrentTimer - ActionTimers[CurrentAction];
                         //transform.position -= GetComponent<Rigidbody>().velocity * MovementReadjust;
                         Moving = false;
@@ -1204,6 +1323,11 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                         PreviousWasUpKey = true;
                         //HandleActionSequence();
                         //Debug.Log("upkey skipped");
+                        if ((IsUpkey(ActionSequence[CurrentAction]) && ActionTimers[CurrentAction] == 0.0f && ActionTimers[CurrentAction - 1] == 0.0f))
+                        {
+                            HandleActionSequence();
+                            Debug.Log("upkey skipped");
+                        }
                     }
                     else
                     {
@@ -1216,8 +1340,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Attacking
         if (AttackingDuration > 0.0f)
         {
-            AttackingDuration -= Time.fixedDeltaTime;
-            if (AttackingDuration < 0.0f)
+            AttackingDuration -= FixedTime;
+            if (AttackingDuration <= 0.0f)
             {
                 //Readjust
                 //transform.position += GetComponent<Rigidbody>().velocity * AttackingDuration;
@@ -1236,7 +1360,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                     RecoveryTimer = 1.0f;
                     //ActionTimers.Add(1.0f);
                 }
-                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //GetComponent<Rigidbody>().velocity *= 0.0f;
+                CurrentVelocity *= 0.0f;
                 //UpVelocity /= 5.0f;
                 //RightVelocity /= 5.0f;
                 AttackingTimer = 9000.2f;
@@ -1252,8 +1377,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Parry
         if (ParryDuration > 0.0f)
         {
-            ParryDuration -= Time.fixedDeltaTime;
-            if (ParryDuration < 0.0f)
+            ParryDuration -= FixedTime;
+            if (ParryDuration <= 0.0f)
             {
                 ParryDuration = 0.0f;
                 RecoveryTimer = 0.2f;
@@ -1272,8 +1397,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         //Dodge
         if (EvadeDuration > 0.0f)
         {
-            EvadeDuration -= Time.fixedDeltaTime;
-            if (EvadeDuration < 0.0f)
+            EvadeDuration -= FixedTime;
+            if (EvadeDuration <= 0.0f)
             {
                 //Readjust
                 //transform.position -= GetComponent<Rigidbody>().velocity * EvadeDuration;
@@ -1281,7 +1406,8 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
                 CurrentPlayerState = PlayerState.Recovering;
                 RecoveryTimer = 0.2f;
                 EvadeDuration = 0.0f;
-                GetComponent<Rigidbody>().velocity *= 0.0f;
+                //GetComponent<Rigidbody>().velocity *= 0.0f;
+                CurrentVelocity *= 0.0f;
                 //UpVelocity /= 10.0f;
                 //RightVelocity /= 10.0f;
                 UpArrowFlag = false;
@@ -1295,13 +1421,13 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             }
         }
 
-        
+
     }
 
     public Vector3 GetPredictedForwardPosition(float FramesAhead)
     {
         Vector3 PredictedForwardPosition = transform.position;
-        float PredictedFrames = FramesAhead * Time.fixedDeltaTime;
+        float PredictedFrames = FramesAhead * FixedTime;
 
         if (Moving)
         {
@@ -1360,7 +1486,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public Vector3 GetPredictedBackwardPosition(float FramesAhead)
     {
         Vector3 PredictedBackwardPosition = transform.position;
-        float PredictedFrames = FramesAhead * Time.fixedDeltaTime;
+        float PredictedFrames = FramesAhead * FixedTime;
 
         if (Moving)
         {
@@ -1511,10 +1637,73 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public void CheckWin()
     {
         GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        if (Enemies.Length == 0)
+        LevelCleared = true;
+        foreach (GameObject enemy in Enemies)
         {
-            LevelCleared = true;
+            if (enemy.GetComponent<MeshRenderer>().enabled == true)
+            {
+                LevelCleared = false;
+            }
+        }
+        if (LevelCleared)
+        {
             HandleDraw();
         }
+    }
+
+    public void HandleWin()
+    {
+        WinTimer += Time.deltaTime;
+        GameObject.FindGameObjectWithTag("Haiku").GetComponent<Text>().color = new Color(0.0f, 0.0f, 0.0f, 1 * WinTimer);
+        if (WinTimer >= WinDuration)
+        {
+            int NextLevel = (Application.loadedLevel + 1) % Application.levelCount;
+            Application.LoadLevel(NextLevel);
+        }
+    }
+
+    public void DeathMovementFixing()
+    {
+        if (RightArrowFlag)
+        {
+            RightArrowFlag = false;
+            //GetComponent<Rigidbody>().velocity -= RightVelocity;
+            CurrentVelocity -= RightVelocity;
+            MovementButtonsDown -= 1;
+            ActionSequence.Add(Actions.MovementRightKeyUp);
+            ActionTimers.Add(MovementTimer);
+            MovementTimer = 0.0f;
+        }
+        if (UpArrowFlag)
+        {
+            UpArrowFlag = false;
+            //GetComponent<Rigidbody>().velocity -= UpVelocity;
+            CurrentVelocity -= UpVelocity;
+            MovementButtonsDown -= 1;
+            ActionSequence.Add(Actions.MovementUpKeyUp);
+            ActionTimers.Add(MovementTimer);
+            MovementTimer = 0.0f;
+        }
+        if (DownArrowFlag)
+        {
+            DownArrowFlag = false;
+            //GetComponent<Rigidbody>().velocity += UpVelocity;
+            CurrentVelocity += UpVelocity;
+            MovementButtonsDown -= 1;
+            ActionSequence.Add(Actions.MovementDownKeyUp);
+            ActionTimers.Add(MovementTimer);
+            MovementTimer = 0.0f;
+        }
+        if (LeftArrowFlag)
+        {
+            LeftArrowFlag = false;
+            //GetComponent<Rigidbody>().velocity += RightVelocity;
+            CurrentVelocity += RightVelocity;
+            MovementButtonsDown -= 1;
+            ActionSequence.Add(Actions.MovementLeftKeyUp);
+            ActionTimers.Add(MovementTimer);
+            MovementTimer = 0.0f;
+        }
+
     }
 }

@@ -121,7 +121,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
             {
                 HandleActionSequence();
             }
-            if (HasDrawn)
+            if (HasDrawn && !WinSequence)
             {
                 ActionClock.AddTime(Time.deltaTime);
             }
@@ -778,6 +778,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
         EnemyCollided = false;
         //GetComponent<Rigidbody>().velocity *= 0.0f;
         CurrentVelocity *= 0.0f;
+        AttackingDuration = 0.0f;
         RecoveryTimer = 0.0f;
         EvadeDuration = 0.0f;
         ParryDuration = 0.0f;
@@ -1654,7 +1655,7 @@ public class PuzzlePlayerBehaviour : MonoBehaviour
     public void HandleWin()
     {
         WinTimer += Time.deltaTime;
-        GameObject.FindGameObjectWithTag("Haiku").GetComponent<Text>().color = new Color(0.0f, 0.0f, 0.0f, 1 * WinTimer);
+        GameObject.FindGameObjectWithTag("Haiku").GetComponent<Text>().color = new Color(1.0f, 1.0f, 1.0f, 1 * WinTimer);
         if (WinTimer >= WinDuration)
         {
             int NextLevel = (Application.loadedLevel + 1) % Application.levelCount;

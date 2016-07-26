@@ -365,13 +365,29 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                     PlayerScript.CurrentVelocity *= 0.0f;
                     PlayerScript.IsAttacking = false;
                     PlayerScript.GetComponent<MeshRenderer>().material = PlayerScript.PlayerColors[3];
-                    PlayerScript.RecoveryTimer = 0.6f;
                     PlayerScript.CurrentPlayerState = PuzzlePlayerBehaviour.PlayerState.Recovering;
                     PlayerScript.EnemyCollided = true;
                     PlayerScript.AttackingDuration = 0.0f;
                     CurrentEnemyState = EnemyState.Recovering;
                     GetComponent<MeshRenderer>().material = EnemyColors[2];
-                    RecoveryTimer = 0.3f;
+                    RecoveryTimer = 0.4f;
+                    PlayerScript.transform.position += Vector3.Normalize(PlayerScript.transform.position - transform.position) * FixedTime * 10.0f;
+                    if (PlayerScript.IsParryStance)
+                    {
+                        PlayerScript.RecoveryTimer = 0.6f;
+                        if (IsPlanningPhase)
+                        {
+                            PlayerScript.ActionTimers.Add(0.2f - PlayerScript.AttackingDuration + 0.6f);
+                        }
+                    }
+                    else
+                    {
+                        PlayerScript.RecoveryTimer = 0.2f;
+                        if (IsPlanningPhase)
+                        {
+                            PlayerScript.ActionTimers.Add(0.4f - PlayerScript.AttackingDuration + 0.2f);
+                        }
+                    }
                 }
                 else if (PlayerScript.AttackingTimer < AttackTimer)
                 {
@@ -451,6 +467,36 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                         Destroy(gameObject);
                     }
                 }
+                else if (CurrentEnemyState == EnemyState.Attacking)
+                {
+                    //Destroy(Col.gameObject);
+                    Col.gameObject.GetComponent<PuzzlePlayerBehaviour>().enabled = false;
+                    Col.gameObject.GetComponent<MeshRenderer>().enabled = false;
+                    Col.gameObject.GetComponent<BoxCollider>().enabled = false;
+                    Col.GetComponent<Rigidbody>().velocity *= 0.0f;
+                    IsActive = false;
+                    GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
+                    foreach (GameObject enemy in Enemies)
+                    {
+                        enemy.GetComponent<PuzzleEnemyBehaviour>().IsActive = false;
+                    }
+                    if (PlayerScript.IsParryStance)
+                    {
+                        PlayerScript.ActionTimers.Add(0.2f);
+                    }
+                    else
+                    {
+                        PlayerScript.ActionTimers.Add(0.4f);
+                    }
+                    if (PlayerScript.IsDrawPhase)
+                    {
+                        PlayerScript.enabled = true;
+                        PlayerScript.GetComponent<MeshRenderer>().enabled = true;
+                        PlayerScript.GetComponent<BoxCollider>().enabled = true;
+                        PlayerScript.DeathMovementFixing();
+                        PlayerScript.HandleDraw();
+                    }
+                }
             }
             else if (PlayerScript.CurrentPlayerState == PuzzlePlayerBehaviour.PlayerState.Parrying)
             {
@@ -486,6 +532,14 @@ public class PuzzleEnemyBehaviour : MonoBehaviour
                 foreach (GameObject enemy in Enemies)
                 {
                     enemy.GetComponent<PuzzleEnemyBehaviour>().IsActive = false;
+                }
+                if (PlayerScript.IsParryStance)
+                {
+                    PlayerScript.ActionTimers.Add(0.2f);
+                }
+                else
+                {
+                    PlayerScript.ActionTimers.Add(0.4f);
                 }
                 if (PlayerScript.IsDrawPhase)
                 {
